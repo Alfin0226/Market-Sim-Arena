@@ -1,0 +1,3540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Market Sim Arena - High-Fidelity CFD Trading Game</title>
+  <!-- Modern Monospace and Sci-Fi Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <style>
+    /* CSS Reset & Variables */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    :root {
+      --bg-darkest: #05080b;
+      --bg-darker: #0b0f14;
+      --bg-card: #0f141c;
+      --border-color: #1f2937;
+      --border-glow: rgba(0, 255, 136, 0.15);
+      
+      --neon-player: #00ff88;
+      --neon-player-glow: rgba(0, 255, 136, 0.4);
+      --neon-bot: #ffaa00;
+      --neon-bot-glow: rgba(255, 170, 0, 0.4);
+      --neon-danger: #ff3366;
+      --neon-danger-glow: rgba(255, 51, 102, 0.4);
+      --neon-neutral: #8b949e;
+      --neon-cyan: #00e5ff;
+      --neon-cyan-glow: rgba(0, 229, 255, 0.4);
+
+      --font-display: 'Orbitron', sans-serif;
+      --font-mono: 'Share Tech Mono', monospace;
+      --font-body: 'Fira Code', monospace;
+    }
+
+    body {
+      background-color: var(--bg-darkest);
+      color: #f0f6fc;
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-darkest);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--neon-neutral);
+    }
+
+    /* Screen Management */
+    .screen {
+      display: none;
+      min-height: 100vh;
+      width: 100%;
+      position: relative;
+    }
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Typography & Utilities */
+    h1, h2, h3, h4 {
+      font-family: var(--font-display);
+      letter-spacing: 1px;
+    }
+    .text-player { color: var(--neon-player); }
+    .text-bot { color: var(--neon-bot); }
+    .text-danger { color: var(--neon-danger); }
+    .text-neutral { color: var(--neon-neutral); }
+    .text-cyan { color: var(--neon-cyan); }
+    
+    .mono {
+      font-family: var(--font-mono);
+    }
+
+    /* Pulsing Dot animation */
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .pulse-dot.green {
+      background-color: var(--neon-player);
+      box-shadow: 0 0 8px var(--neon-player);
+      animation: pulse 1.5s infinite;
+    }
+    .pulse-dot.amber {
+      background-color: var(--neon-bot);
+      box-shadow: 0 0 8px var(--neon-bot);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.3; }
+      50% { opacity: 1; }
+      100% { opacity: 0.3; }
+    }
+
+    /* --- SCREEN 1: MARKET SELECTION --- */
+    #selection-screen {
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+      background: radial-gradient(circle at center, #0a1420 0%, var(--bg-darkest) 100%);
+    }
+
+    .selection-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .selection-header h1 {
+      font-size: 3rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+      margin-bottom: 10px;
+    }
+
+    .selection-header p {
+      color: var(--neon-neutral);
+      font-size: 1rem;
+    }
+
+    .selection-container {
+      max-width: 1250px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .selection-grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 30px;
+      width: 100%;
+    }
+
+    .selection-left-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .selection-right-pane {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 1050px) {
+      .selection-grid-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .instrument-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 15px;
+    }
+
+    .instrument-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--border-color);
+      transition: background-color 0.3s;
+    }
+
+    .instrument-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .instrument-card.selected {
+      border-color: var(--neon-player);
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+    }
+
+    .instrument-card.selected::before {
+      background: var(--neon-player);
+    }
+
+    .card-avatar {
+      font-size: 2.2rem;
+      margin-bottom: 5px;
+    }
+
+    .card-title-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-name {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-symbol {
+      font-size: 0.8rem;
+      color: var(--neon-cyan);
+    }
+
+    .card-blurb {
+      font-size: 0.78rem;
+      color: var(--neon-neutral);
+      line-height: 1.4;
+      flex-grow: 1;
+    }
+
+    .card-specs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .spec-badge {
+      font-size: 0.65rem;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .spec-badge.volatility {
+      border-color: rgba(255, 51, 102, 0.3);
+      color: var(--neon-danger);
+    }
+
+    .spec-badge.trend {
+      border-color: rgba(0, 255, 136, 0.3);
+      color: var(--neon-player);
+    }
+
+    .spec-badge.adaptive {
+      border-color: rgba(0, 229, 255, 0.3);
+      color: var(--neon-cyan);
+    }
+
+    /* Configuration Panel */
+    .config-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .config-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .config-label {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--neon-neutral);
+    }
+
+    .leverage-selector {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-leverage {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 10px 20px;
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-leverage:hover {
+      border-color: var(--neon-neutral);
+    }
+
+    .btn-leverage.active {
+      background: rgba(0, 255, 136, 0.08);
+      border-color: var(--neon-player);
+      color: var(--neon-player);
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+    }
+
+    .btn-launch {
+      background: var(--neon-player);
+      color: var(--bg-darkest);
+      border: none;
+      padding: 16px 36px;
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-launch:hover {
+      background: #00e676;
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+    }
+
+    .btn-launch:active {
+      transform: translateY(0);
+    }
+
+    /* --- SCREEN 2: TRADING ARENA --- */
+    #arena-screen {
+      background-color: var(--bg-darkest);
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-height: 100vh;
+    }
+
+    /* Arena Header */
+    .arena-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 15px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    .header-logo {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+
+    .live-status {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Game Controls (Speed, Reset) */
+    .game-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-control {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 6px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-control:hover {
+      border-color: var(--neon-neutral);
+    }
+
+    .btn-control.active {
+      background: rgba(0, 229, 255, 0.08);
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+    }
+
+    .btn-control.reset {
+      background: rgba(255, 51, 102, 0.05);
+      border-color: rgba(255, 51, 102, 0.3);
+      color: var(--neon-danger);
+    }
+
+    .btn-control.reset:hover {
+      background: rgba(255, 51, 102, 0.1);
+      border-color: var(--neon-danger);
+    }
+
+    /* Main Dashboard Grid Layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 15px;
+      flex-grow: 1;
+      min-height: 0; /* Important for scroll */
+    }
+
+    /* Left Side: Chart Pane */
+    .chart-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      min-height: 0;
+    }
+
+    .chart-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+      position: relative;
+      min-height: 0;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .ticker-details {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .ticker-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .ticker-price {
+      font-family: var(--font-mono);
+      font-size: 1.3rem;
+      font-weight: 700;
+      transition: color 0.15s;
+    }
+
+    .ticker-price.up { color: var(--neon-player); }
+    .ticker-price.down { color: var(--neon-danger); }
+
+    .price-canvas-wrapper {
+      position: relative;
+      flex-grow: 1;
+      width: 100%;
+      min-height: 0;
+    }
+
+    .price-canvas-wrapper canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Left Side Bottom: Equity Race Chart */
+    .equity-pane {
+      height: 140px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .equity-pane-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      font-size: 0.75rem;
+      color: var(--neon-neutral);
+      font-family: var(--font-display);
+    }
+
+    .equity-canvas-wrapper {
+      position: relative;
+      flex-grow: 1;
+      width: 100%;
+      min-height: 0;
+    }
+
+    .equity-canvas-wrapper canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Right Side: Portfolios Column */
+    .portfolios-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+    }
+
+    .portfolio-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+    }
+
+    .portfolio-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+    }
+
+    .portfolio-card.player::before { background-color: var(--neon-player); }
+    .portfolio-card.bot::before { background-color: var(--neon-bot); }
+
+    .portfolio-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .portfolio-title {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .leverage-badge {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .portfolio-equity-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .equity-label {
+      font-size: 0.7rem;
+      color: var(--neon-neutral);
+    }
+
+    .equity-value {
+      font-family: var(--font-mono);
+      font-size: 1.8rem;
+      font-weight: 700;
+      transition: color 0.15s;
+    }
+    .equity-value.up { text-shadow: 0 0 10px rgba(0, 255, 136, 0.2); }
+    .equity-value.down { text-shadow: 0 0 10px rgba(255, 51, 102, 0.2); }
+
+    .portfolio-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.15);
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+    }
+
+    .stat-box {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      color: var(--neon-neutral);
+    }
+
+    .stat-val {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #fff;
+    }
+
+    .margin-utilization-section {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .margin-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--neon-neutral);
+    }
+
+    .margin-bar-bg {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    .margin-bar-fill {
+      height: 100%;
+      width: 0%;
+      background-color: var(--neon-player);
+      border-radius: 4px;
+      transition: width 0.2s, background-color 0.2s;
+    }
+
+    .margin-bar-fill.warning {
+      background-color: var(--neon-bot);
+    }
+
+    .margin-bar-fill.danger {
+      background-color: var(--neon-danger);
+    }
+
+    .position-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+
+    .position-state-badge {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    .position-state-badge.flat {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--neon-neutral);
+    }
+
+    .position-state-badge.long {
+      background: rgba(0, 255, 136, 0.1);
+      color: var(--neon-player);
+      border: 1px solid rgba(0, 255, 136, 0.2);
+    }
+
+    .position-state-badge.short {
+      background: rgba(255, 51, 102, 0.1);
+      color: var(--neon-danger);
+      border: 1px solid rgba(255, 51, 102, 0.2);
+    }
+
+    .lockout-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 15, 20, 0.85);
+      backdrop-filter: blur(4px);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      border-radius: 8px;
+      z-index: 10;
+    }
+
+    .lockout-overlay.active {
+      display: flex;
+    }
+
+    /* Bottom: Action / Trading Controls Pane */
+    .controls-pane {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .trade-actions {
+      display: flex;
+      gap: 12px;
+      flex-grow: 1;
+      min-width: 320px;
+    }
+
+    .btn-trade {
+      flex: 1;
+      height: 52px;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      border: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-trade:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    .btn-trade.long {
+      background: var(--neon-player);
+      color: var(--bg-darkest);
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+    }
+
+    .btn-trade.long:hover:not(:disabled) {
+      background: #00e676;
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-trade.short {
+      background: var(--neon-danger);
+      color: #fff;
+      box-shadow: 0 0 15px rgba(255, 51, 102, 0.2);
+    }
+
+    .btn-trade.short:hover:not(:disabled) {
+      background: #ff1a53;
+      box-shadow: 0 0 25px rgba(255, 51, 102, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-trade.close-pos {
+      background: var(--neon-cyan);
+      color: var(--bg-darkest);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+      display: none;
+    }
+
+    .btn-trade.close-pos:hover:not(:disabled) {
+      background: #00b8d4;
+      box-shadow: 0 0 25px rgba(0, 229, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-trade:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-trade.hold {
+      flex: 0.4;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      color: #fff;
+    }
+
+    .btn-trade.hold:hover:not(:disabled) {
+      border-color: var(--neon-neutral);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Size Allocation Buttons */
+    .size-selector-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .size-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-size {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      color: #fff;
+      padding: 8px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-size:hover {
+      border-color: var(--neon-neutral);
+    }
+
+    .btn-size.active {
+      background: rgba(0, 255, 136, 0.08);
+      border-color: var(--neon-player);
+      color: var(--neon-player);
+    }
+
+    /* --- SCREEN SHAKE & RED FLASH (MARGIN CALL) --- */
+    .margin-call-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(255, 51, 102, 0.25);
+      z-index: 100;
+      pointer-events: none;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      animation: flash-red 0.5s ease-out 3;
+    }
+
+    .margin-call-overlay.active {
+      display: flex;
+    }
+
+    .margin-call-hud {
+      background: rgba(11, 15, 20, 0.95);
+      border: 2px solid var(--neon-danger);
+      box-shadow: 0 0 30px var(--neon-danger);
+      padding: 30px 50px;
+      border-radius: 12px;
+      text-align: center;
+      animation: pulse-hud 0.5s infinite alternate;
+    }
+
+    .margin-call-hud h2 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      color: var(--neon-danger);
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    .margin-call-hud p {
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    @keyframes flash-red {
+      0% { opacity: 0; }
+      50% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    @keyframes pulse-hud {
+      0% { transform: scale(0.98); border-color: rgba(255, 51, 102, 0.5); }
+      100% { transform: scale(1.02); border-color: var(--neon-danger); }
+    }
+
+    .shake-screen {
+      animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+
+    /* --- RESULTS MODAL --- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(5, 8, 11, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 110;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .results-modal {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      border-radius: 16px;
+      max-width: 760px;
+      width: 100%;
+      padding: 35px;
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .results-header {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    .results-header h2 {
+      font-size: 2.2rem;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .winner-banner {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 900;
+      padding: 10px 0;
+      background: linear-gradient(90deg, rgba(255,170,0,0) 0%, rgba(255,170,0,0.15) 50%, rgba(255,170,0,0) 100%);
+      margin-bottom: 15px;
+      border-top: 1px solid rgba(255, 170, 0, 0.2);
+      border-bottom: 1px solid rgba(255, 170, 0, 0.2);
+    }
+    
+    .winner-banner.player-win {
+      color: var(--neon-player);
+      background: linear-gradient(90deg, rgba(0,255,136,0) 0%, rgba(0,255,136,0.15) 50%, rgba(0,255,136,0) 100%);
+      border-color: rgba(0, 255, 136, 0.2);
+    }
+
+    .winner-banner.bot-win {
+      color: var(--neon-bot);
+    }
+
+    .winner-banner.draw {
+      color: var(--neon-cyan);
+      background: linear-gradient(90deg, rgba(0,229,255,0) 0%, rgba(0,229,255,0.15) 50%, rgba(0,229,255,0) 100%);
+      border-color: rgba(0, 229, 255, 0.2);
+    }
+
+    /* Comparison Table */
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      margin-top: 5px;
+    }
+
+    .results-table th, .results-table td {
+      padding: 12px 16px;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .results-table th {
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--neon-neutral);
+      font-weight: 700;
+    }
+
+    .results-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .results-table td.label {
+      text-align: left;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: #fff;
+    }
+
+    .results-table td.player-val {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--neon-player);
+    }
+
+    .results-table td.bot-val {
+      font-size: 1.1rem;
+      color: var(--neon-bot);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .btn-modal {
+      flex: 1;
+      height: 48px;
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      text-transform: uppercase;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s;
+    }
+
+    .btn-modal.primary {
+      background: var(--neon-player);
+      color: var(--bg-darkest);
+      border: none;
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+    }
+
+    .btn-modal.primary:hover {
+      background: #00e676;
+      box-shadow: 0 0 25px rgba(0, 255, 136, 0.4);
+    }
+
+    .btn-modal.secondary {
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+    }
+
+    .btn-modal.secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--neon-neutral);
+    }
+
+    /* Response/Mobile Styling adjustments */
+    @media (max-width: 900px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+      }
+      #arena-screen {
+        max-height: none;
+        overflow-y: auto;
+      }
+      .portfolios-pane {
+        flex-direction: row;
+        overflow-y: visible;
+        flex-wrap: wrap;
+      }
+      .portfolio-card {
+        flex: 1 1 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SCREEN 1: MARKET SELECTION -->
+  <div id="selection-screen" class="screen active">
+    <div class="selection-container">
+      <div class="selection-header">
+        <h1>Market Sim Arena</h1>
+        <p>Configure your market race, select your bot opponent, and trade live CFDs</p>
+      </div>
+
+      <div class="selection-grid-layout">
+        <!-- Left Pane: All config steps -->
+        <div class="selection-left-pane">
+          <div>
+            <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 1: Choose Market Instrument</div>
+            <!-- Instrument Selection Cards Grid -->
+            <div class="cards-grid" id="instruments-grid" style="margin-bottom: 10px;">
+              <!-- Javascript renders cards here -->
+            </div>
+          </div>
+
+          <div>
+            <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 2: Choose Opponent Bot</div>
+            <!-- Bot Selection Cards Grid -->
+            <div class="cards-grid" id="bots-grid" style="margin-bottom: 10px;">
+              <!-- Javascript renders cards here -->
+            </div>
+          </div>
+
+          <!-- Configuration Panel -->
+          <div class="config-panel">
+            <div class="config-group">
+              <div class="config-label">Account Leverage</div>
+              <div class="leverage-selector">
+                <button class="btn-leverage active" data-leverage="5">1:5</button>
+                <button class="btn-leverage" data-leverage="10">1:10</button>
+                <button class="btn-leverage" data-leverage="20">1:20</button>
+              </div>
+            </div>
+
+            <div class="config-group">
+              <div class="config-label" style="text-align: right;">Initial Balance</div>
+              <div class="mono" style="font-size: 1.6rem; font-weight: 700; color: #fff;">$10,000.00</div>
+            </div>
+
+            <button class="btn-launch" id="btn-enter-arena">Enter Arena</button>
+          </div>
+        </div>
+
+        <!-- Right Pane: User Profile & Leaderboard -->
+        <div class="selection-right-pane">
+          <!-- User Profile Box -->
+          <div class="portfolio-card player" style="margin-bottom: 20px; border-left: 3px solid var(--neon-player);">
+            <span class="portfolio-title text-player">TRADER PROFILE</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; min-height: 38px;">
+              <div id="username-display-wrapper" style="display: flex; align-items: center; gap: 8px; width: 100%; justify-content: space-between;">
+                <span id="profile-username" class="mono" style="font-size: 1.1rem; color: #fff; border-bottom: 1px dashed var(--neon-player); cursor: pointer;">GuestTrader</span>
+                <span style="font-size: 0.8rem; cursor: pointer; color: var(--neon-neutral);" id="btn-edit-username">✏️ Edit</span>
+              </div>
+              <div id="username-input-wrapper" style="display: none; align-items: center; gap: 8px; width: 100%;">
+                <input type="text" id="username-input" class="mono" style="background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 1rem; width: 70%;" maxlength="12">
+                <button class="btn-control" id="btn-save-username" style="padding: 4px 8px; background: rgba(0,255,136,0.1); border-color: var(--neon-player); color: var(--neon-player);">Save</button>
+              </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 0.72rem; border-top: 1px solid var(--border-color); padding-top: 8px;">
+              <span id="profile-mode" class="text-neutral mono">MODE: GUEST</span>
+              <button class="btn-control" id="btn-auth-trigger" style="padding: 2px 6px; font-size: 0.68rem; background: rgba(0, 229, 255, 0.1); border-color: var(--neon-cyan); color: var(--neon-cyan); cursor: pointer;">LOG IN / REGISTER</button>
+            </div>
+          </div>
+
+          <!-- Leaderboard Box -->
+          <div class="portfolio-card" style="border-left: 3px solid var(--neon-cyan); flex-grow: 1; display: flex; flex-direction: column;">
+            <!-- Tabs Navigation -->
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+              <span id="tab-leaderboard-global" class="mono text-cyan" style="cursor: pointer; font-size: 0.8rem; font-weight: 700; border-bottom: 2px solid var(--neon-cyan); padding-bottom: 4px; transition: all 0.2s;">GLOBAL RANKINGS</span>
+              <span id="tab-leaderboard-personal" class="mono text-neutral" style="cursor: pointer; font-size: 0.8rem; font-weight: 700; padding-bottom: 4px; transition: all 0.2s;">MY RECORDS</span>
+            </div>
+
+            <span class="portfolio-title text-cyan" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;" id="fame-title">🏆 WALL OF FAME (TOP 5)</span>
+            <table class="results-table" style="font-size: 0.72rem; margin-bottom: 20px; width: 100%;" id="fame-table">
+              <thead>
+                <tr>
+                  <th style="text-align: left; padding: 6px 4px;">Trader</th>
+                  <th style="padding: 6px 4px;">Market</th>
+                  <th style="text-align: right; padding: 6px 4px;">Return</th>
+                </tr>
+              </thead>
+              <tbody class="mono">
+                <!-- Dynamic rows -->
+              </tbody>
+            </table>
+
+            <span class="portfolio-title text-danger" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;" id="shame-title">💀 WALL OF SHAME (TOP 5)</span>
+            <table class="results-table" style="font-size: 0.72rem; width: 100%;" id="shame-table">
+              <thead>
+                <tr>
+                  <th style="text-align: left; padding: 6px 4px;">Trader</th>
+                  <th style="padding: 6px 4px;">Market</th>
+                  <th style="text-align: right; padding: 6px 4px;">Return</th>
+                </tr>
+              </thead>
+              <tbody class="mono">
+                <!-- Dynamic rows -->
+              </tbody>
+            </table>
+            
+            <div style="text-align: right; margin-top: auto; padding-top: 15px;">
+              <span style="font-size: 0.65rem; cursor: pointer; color: var(--neon-danger); text-decoration: underline;" id="btn-reset-leaderboard">Reset Leaderboard</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: TRADING ARENA -->
+  <div id="arena-screen" class="screen">
+    <!-- Header -->
+    <div class="arena-header">
+      <div class="header-logo">MARKET SIM ARENA</div>
+      
+      <div class="live-status">
+        <div class="status-item">
+          <span class="pulse-dot green"></span> FEED: <span class="text-player">LIVE</span>
+        </div>
+        <div class="status-item">
+          <span class="pulse-dot amber"></span> BOT: <span class="text-bot">ACTIVE</span>
+        </div>
+        <div class="status-item mono">
+          DAY: <span id="tick-counter" class="text-cyan">0/250</span>
+        </div>
+      </div>
+
+      <div class="game-controls">
+        <button class="btn-control active" id="btn-speed-pause">PAUSE</button>
+        <button class="btn-control" id="btn-speed-1x">1X</button>
+        <button class="btn-control" id="btn-speed-2x">2X</button>
+        <button class="btn-control" id="btn-speed-5x">5X</button>
+        <button class="btn-control reset" id="btn-exit-arena">EXIT</button>
+      </div>
+    </div>
+
+    <!-- Main Grid Dashboard -->
+    <div class="dashboard-grid">
+      
+      <!-- Left side: Price & Equity Charts -->
+      <div class="chart-pane">
+        <!-- Price Chart Canvas Panel -->
+        <div class="chart-container">
+          <div class="chart-header">
+            <div class="ticker-details">
+              <span class="ticker-title" id="arena-ticker-name">Gold</span>
+              <span class="mono text-neutral" id="arena-ticker-symbol">[XAU]</span>
+            </div>
+            <div class="ticker-price mono" id="arena-ticker-price">$2,300.00</div>
+          </div>
+          
+          <div class="price-canvas-wrapper">
+            <canvas id="price-chart-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Equity Race Track Panel -->
+        <div class="equity-pane">
+          <div class="equity-pane-header">
+            <div>EQUITY RACE TRACK (1 YEAR / 250 DAYS)</div>
+            <div class="mono">
+              P: <span class="text-player" id="race-player-eq">$10k</span> | 
+              B: <span class="text-bot" id="race-bot-eq">$10k</span>
+            </div>
+          </div>
+          <div class="equity-canvas-wrapper">
+            <canvas id="equity-chart-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side: Portfolio Data Cards -->
+      <div class="portfolios-pane">
+        
+        <!-- Player Stats -->
+        <div class="portfolio-card player">
+          <!-- Margin call lockout overlay -->
+          <div class="lockout-overlay" id="player-lockout">
+            <span class="text-danger mono" style="font-weight: 700;">LIQUIDATED</span>
+            <span class="text-neutral" style="font-size: 0.75rem;" id="player-lockout-text">Lockout: 5 days</span>
+          </div>
+
+          <div class="portfolio-title-row">
+            <span class="portfolio-title text-player">TRADER [PLAYER]</span>
+            <span class="leverage-badge mono" id="player-leverage-badge">1:5</span>
+          </div>
+          
+          <div class="portfolio-equity-row">
+            <span class="equity-label">ACCOUNT EQUITY</span>
+            <span class="equity-value mono text-player" id="player-equity">$10,000.00</span>
+          </div>
+
+          <div class="portfolio-stats-grid">
+            <div class="stat-box">
+              <span class="stat-label">CASH BALANCE</span>
+              <span class="stat-val mono" id="player-balance">$10,000.00</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">FLOATING P&L</span>
+              <span class="stat-val mono" id="player-floating-pl">$0.00</span>
+            </div>
+          </div>
+
+          <div class="margin-utilization-section">
+            <div class="margin-labels">
+              <span>MARGIN UTILIZATION</span>
+              <span id="player-margin-percent">0%</span>
+            </div>
+            <div class="margin-bar-bg">
+              <div class="margin-bar-fill" id="player-margin-bar"></div>
+            </div>
+            <div class="margin-labels" style="font-size: 0.65rem;">
+              <span>Used: <span id="player-margin-used">$0</span></span>
+              <span>Available: <span id="player-margin-free">$10,000</span></span>
+            </div>
+          </div>
+
+          <div class="position-row">
+            <span class="stat-label">POSITION</span>
+            <span class="position-state-badge flat" id="player-position-badge">FLAT</span>
+          </div>
+
+          <div class="portfolio-stats-grid" id="player-pos-details" style="display: none;">
+            <div class="stat-box">
+              <span class="stat-label">SIZE</span>
+              <span class="stat-val mono" id="player-pos-size">0.00</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">ENTRY PRICE</span>
+              <span class="stat-val mono" id="player-pos-entry">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bot Stats -->
+        <div class="portfolio-card bot">
+          <!-- Margin call lockout overlay -->
+          <div class="lockout-overlay" id="bot-lockout">
+            <span class="text-danger mono" style="font-weight: 700;">LIQUIDATED</span>
+            <span class="text-neutral" style="font-size: 0.75rem;" id="bot-lockout-text">Lockout: 5 days</span>
+          </div>
+
+          <div class="portfolio-title-row">
+            <span class="portfolio-title text-bot">ALGO [SMA BOT]</span>
+            <span class="leverage-badge mono" id="bot-leverage-badge">1:5</span>
+          </div>
+          
+          <div class="portfolio-equity-row">
+            <span class="equity-label">ACCOUNT EQUITY</span>
+            <span class="equity-value mono text-bot" id="bot-equity">$10,000.00</span>
+          </div>
+
+          <div class="portfolio-stats-grid">
+            <div class="stat-box">
+              <span class="stat-label">CASH BALANCE</span>
+              <span class="stat-val mono" id="bot-balance">$10,000.00</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">FLOATING P&L</span>
+              <span class="stat-val mono" id="bot-floating-pl">$0.00</span>
+            </div>
+          </div>
+
+          <div class="margin-utilization-section">
+            <div class="margin-labels">
+              <span>MARGIN UTILIZATION</span>
+              <span id="bot-margin-percent">0%</span>
+            </div>
+            <div class="margin-bar-bg">
+              <div class="margin-bar-fill warning" id="bot-margin-bar"></div>
+            </div>
+            <div class="margin-labels" style="font-size: 0.65rem;">
+              <span>Used: <span id="bot-margin-used">$0</span></span>
+              <span>Available: <span id="bot-margin-free">$10,000</span></span>
+            </div>
+          </div>
+
+          <div class="position-row">
+            <span class="stat-label">POSITION</span>
+            <span class="position-state-badge flat" id="bot-position-badge">FLAT</span>
+          </div>
+
+          <div class="portfolio-stats-grid" id="bot-pos-details" style="display: none;">
+            <div class="stat-box">
+              <span class="stat-label">SIZE</span>
+              <span class="stat-val mono" id="bot-pos-size">0.00</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">ENTRY PRICE</span>
+              <span class="stat-val mono" id="bot-pos-entry">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bottom Pane: Interactive Trader Control Pad -->
+    <div class="controls-pane">
+      <div class="size-selector-group">
+        <span class="config-label" style="font-size: 0.72rem;">Margin Deployment Size</span>
+        <div class="size-buttons">
+          <button class="btn-size" data-pct="0.1">10%</button>
+          <button class="btn-size" data-pct="0.25">25%</button>
+          <button class="btn-size active" data-pct="0.5">50%</button>
+          <button class="btn-size" data-pct="1.0">100%</button>
+        </div>
+      </div>
+
+      <div class="trade-actions">
+        <!-- Entry actions -->
+        <button class="btn-trade long" id="btn-trade-long">Go Long</button>
+        <button class="btn-trade short" id="btn-trade-short">Go Short</button>
+        <!-- Exit action replaces both when position is held -->
+        <button class="btn-trade close-pos" id="btn-trade-close">Close Position</button>
+        <!-- Hold/Skip -->
+        <button class="btn-trade hold" id="btn-trade-hold">Hold</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARGIN CALL OVERLAY FLASH (Dramatic Screen Warning) -->
+  <div class="margin-call-overlay" id="margin-call-overlay">
+    <div class="margin-call-hud">
+      <h2>⚠️ MARGIN CALL</h2>
+      <p>YOUR POSITION WAS AUTO-LIQUIDATED DUE TO INSUFFICIENT MARGIN</p>
+    </div>
+  </div>
+
+  <!-- END OF RACE RESULTS MODAL -->
+  <div class="modal-overlay" id="results-modal-overlay">
+    <div class="results-modal">
+      <div class="results-header">
+        <h2>Race Results</h2>
+        <div class="winner-banner" id="winner-banner">PLAYER WINS!</div>
+      </div>
+
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>Performance Metric</th>
+            <th class="text-player">Player (You)</th>
+            <th class="text-bot">SMA Bot</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">Final Equity</td>
+            <td class="player-val" id="res-play-equity">$10,000.00</td>
+            <td class="bot-val" id="res-bot-equity">$10,000.00</td>
+          </tr>
+          <tr>
+            <td class="label">Total Return (%)</td>
+            <td class="player-val" id="res-play-return">+0.0%</td>
+            <td class="bot-val" id="res-bot-return">+0.0%</td>
+          </tr>
+          <tr>
+            <td class="label">Max Drawdown</td>
+            <td class="player-val text-danger" id="res-play-mdd">0.0%</td>
+            <td class="bot-val text-danger" id="res-bot-mdd">0.0%</td>
+          </tr>
+          <tr>
+            <td class="label">Annualized Sharpe Ratio</td>
+            <td class="player-val" id="res-play-sharpe">0.00</td>
+            <td class="bot-val" id="res-bot-sharpe">0.00</td>
+          </tr>
+          <tr>
+            <td class="label">Total Trades Executed</td>
+            <td class="player-val text-cyan" id="res-play-trades">0</td>
+            <td class="bot-val text-cyan" id="res-bot-trades">0</td>
+          </tr>
+          <tr>
+            <td class="label">Margin Calls Triggered</td>
+            <td class="player-val text-danger" id="res-play-margin-calls">0</td>
+            <td class="bot-val text-danger" id="res-bot-margin-calls">0</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="modal-actions">
+        <button class="btn-modal primary" id="btn-modal-rematch">Rematch</button>
+        <button class="btn-modal secondary" id="btn-modal-back">Back to Selection</button>
+        <button class="btn-modal secondary" id="btn-modal-share" style="flex: 0.6;">Share Results</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION (LOGIN/REGISTER) MODAL -->
+  <div class="modal-overlay" id="auth-modal-overlay">
+    <div class="results-modal" style="max-width: 400px; border-left: 3px solid var(--neon-cyan);">
+      <div class="results-header" style="margin-bottom: 20px;">
+        <h2 style="font-size: 1.3rem;">ACCESS CONTROL</h2>
+        <div style="display: flex; gap: 15px; margin-top: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <span id="tab-auth-login" class="mono text-cyan" style="cursor: pointer; font-size: 0.82rem; font-weight: 700; border-bottom: 2px solid var(--neon-cyan); padding-bottom: 4px; transition: all 0.2s;">LOG IN</span>
+          <span id="tab-auth-register" class="mono text-neutral" style="cursor: pointer; font-size: 0.82rem; font-weight: 700; padding-bottom: 4px; transition: all 0.2s;">REGISTER</span>
+        </div>
+      </div>
+      
+      <!-- Login View -->
+      <div id="auth-login-view" style="display: flex; flex-direction: column; gap: 15px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span class="config-label" style="font-size: 0.72rem;">Username</span>
+          <input type="text" id="login-username" class="mono" style="width: 100%; background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; font-size: 0.9rem;" placeholder="Enter username" maxlength="12">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span class="config-label" style="font-size: 0.72rem;">Password</span>
+          <input type="password" id="login-password" class="mono" style="width: 100%; background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; font-size: 0.9rem;" placeholder="Enter password">
+        </div>
+        <div id="login-error" class="text-danger mono" style="font-size: 0.72rem; display: none;"></div>
+        <button class="btn-launch" id="btn-submit-login" style="margin-top: 10px; height: 38px; font-size: 0.9rem;">Log In</button>
+      </div>
+
+      <!-- Register View -->
+      <div id="auth-register-view" style="display: none; flex-direction: column; gap: 15px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span class="config-label" style="font-size: 0.72rem;">New Username</span>
+          <input type="text" id="register-username" class="mono" style="width: 100%; background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; font-size: 0.9rem;" placeholder="Pick username (max 12 chars)" maxlength="12">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span class="config-label" style="font-size: 0.72rem;">Password</span>
+          <input type="password" id="register-password" class="mono" style="width: 100%; background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; font-size: 0.9rem;" placeholder="Choose password">
+        </div>
+        <div id="register-error" class="text-danger mono" style="font-size: 0.72rem; display: none;"></div>
+        <button class="btn-launch" id="btn-submit-register" style="margin-top: 10px; height: 38px; font-size: 0.9rem;">Create Account</button>
+      </div>
+      
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <button class="btn-control" id="btn-close-auth" style="padding: 4px 10px; font-size: 0.75rem;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT GAME ENGINE -->
+  <script type="module">
+    import { neon } from 'https://esm.run/@neondatabase/serverless@0.9.3';
+
+    // --- NEON DATABASE SETUP ---
+    // Expose connection string here to enable live global rankings!
+    // Example: "postgresql://username:password@ep-cool-breeze-123456.us-east-2.aws.neon.tech/neondb?sslmode=require"
+    const NEON_DB_URL = ""; 
+
+    let sql = null;
+    if (NEON_DB_URL) {
+      try {
+        sql = neon(NEON_DB_URL);
+      } catch (e) {
+        console.error("Failed to initialize Neon database client:", e);
+      }
+    }
+    // ----------------------------------------------------
+    // CONSTANTS & INSTRUMENT PROFILES
+    // ----------------------------------------------------
+    const INSTRUMENTS = {
+      nasdaq: {
+        id: 'nasdaq',
+        name: "Nasdaq 100",
+        symbol: "NDX",
+        blurb: "Tech Titan. High momentum, driven by tech rallies. Prone to sharp trends with moderate volatility.",
+        avatar: "🤖",
+        startPrice: 18000,
+        spreadPct: 0.0002, // 2 bps
+        drift: 0.00025, // 0.025% per tick
+        volatility: 0.0012, // 0.12% per tick
+        autocorr: 0.6, // momentum strength
+        shockProb: 0.008, 
+        shockSize: 0.015,
+        meanReversion: 0,
+        specs: ["Trending", "High Momentum", "Tighter Spread (0.02%)"]
+      },
+      sp500: {
+        id: 'sp500',
+        name: "S&P 500",
+        symbol: "SPX",
+        blurb: "The General. Bedrock index of 500 giants. Low volatility, steady drift, resilient and low-risk.",
+        avatar: "🏢",
+        startPrice: 5200,
+        spreadPct: 0.00015, // 1.5 bps
+        drift: 0.00015,
+        volatility: 0.0008,
+        autocorr: 0.4,
+        shockProb: 0.003,
+        shockSize: 0.01,
+        meanReversion: 0,
+        specs: ["Steady Growth", "Low Volatility", "Tightest Spread (0.015%)"]
+      },
+      gold: {
+        id: 'gold',
+        name: "Gold Spot",
+        symbol: "XAU",
+        blurb: "The Safe Haven. Solid mean-reverting commodity. Sells off in cycles but spikes hard during panic shocks.",
+        avatar: "✨",
+        startPrice: 2350,
+        spreadPct: 0.0005, // 5 bps
+        drift: 0,
+        volatility: 0.0010,
+        autocorr: 0.1,
+        shockProb: 0.015,
+        shockSize: 0.020,
+        shockBias: 0.8, // 80% of shocks are up
+        meanReversion: 0.035, // Ornstein-Uhlenbeck coefficient
+        specs: ["Mean Reverting", "Upside Spikes", "Moderate Spread (0.05%)"]
+      },
+      oil: {
+        id: 'oil',
+        name: "Crude Oil WTI",
+        symbol: "WTI",
+        blurb: "The Wildcat. High-octane energy commodity. Prone to extreme volatility, frequent geopolitical supply shocks.",
+        avatar: "🛢️",
+        startPrice: 80,
+        spreadPct: 0.0015, // 15 bps
+        drift: -0.0001,
+        volatility: 0.0030, // Extreme vol
+        autocorr: 0.2,
+        shockProb: 0.025, // Frequent shocks
+        shockSize: 0.038, // Massive shocks
+        meanReversion: 0,
+        specs: ["Highest Volatility", "Supply Shocks", "Wide Spread (0.15%)"]
+      },
+      silver: {
+        id: 'silver',
+        name: "Silver Spot",
+        symbol: "XAG",
+        blurb: "The Shadow. Moves closely with Gold, but with amplified beta volatility and less liquidity. Highly erratic.",
+        avatar: "🥈",
+        startPrice: 30.0,
+        spreadPct: 0.0010, // 10 bps
+        drift: 0,
+        volatility: 0.0022,
+        autocorr: 0.1,
+        shockProb: 0.018,
+        shockSize: 0.028,
+        meanReversion: 0.015,
+        correlationToGold: 0.75, // 75% correlation to Gold
+        specs: ["Gold-Correlated", "Erratic Swings", "Wide Spread (0.10%)"]
+      }
+    };
+
+    const BOTS = {
+      ema_cross: {
+        id: 'ema_cross',
+        name: "EMA Cross Bot",
+        desc: "Classic trend rider. Trades 5/20 Exponential Moving Average crossovers. Reacts faster to price changes than SMA.",
+        avatar: "📈",
+        style: "trend",
+        specs: ["Trend Following", "Medium Speed", "EMA (5, 20)"]
+      },
+      breakout: {
+        id: 'breakout',
+        name: "Turtle Breakout Bot",
+        desc: "Classic breakout channel trader. Goes long/short on 15-day price breakouts. Thrives on spiky assets like Oil.",
+        avatar: "⚡",
+        style: "volatility",
+        specs: ["Breakout Channel", "Fast Speed", "Donchian 15"]
+      },
+      macd: {
+        id: 'macd',
+        name: "MACD Trend Bot",
+        desc: "Standard indicator specialist. Trades MACD line/signal line crossovers. Captures smooth medium-term trends.",
+        avatar: "📊",
+        style: "trend",
+        specs: ["Trend Following", "Slow Speed", "MACD (12, 26, 9)"]
+      },
+      regime_switch: {
+        id: 'regime_switch',
+        name: "Adaptive Regime Bot",
+        desc: "Regime-switching brain. Uses SMA crossovers in trending periods, but flips to RSI mean-reversion during low vol consolidations.",
+        avatar: "🧠",
+        style: "adaptive",
+        specs: ["Regime Adaptive", "Multi-Strategy", "SMA + RSI (14)"]
+      }
+    };
+
+    // ----------------------------------------------------
+    // MATHEMATICAL UTILITIES
+    // ----------------------------------------------------
+    // Box-Muller transform for normal distribution
+    function randomNormal() {
+      let u = 0, v = 0;
+      while (u === 0) u = Math.random();
+      while (v === 0) v = Math.random();
+      return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    }
+
+    // Format currency
+    function formatUSD(val) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    }
+
+    // Format percent
+    function formatPct(val) {
+      const sign = val >= 0 ? '+' : '';
+      return `${sign}${val.toFixed(2)}%`;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    async function hashPassword(username, password) {
+      const salt = `market-sim-salt-${username.toLowerCase()}`;
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password + salt);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    // ----------------------------------------------------
+    // PRICE GENERATION ENGINE
+    // ----------------------------------------------------
+    class PriceEngine {
+      static generateFullPaths(selectedId, length = 280) { // 250 race ticks + 30 pre-ticks
+        const paths = {};
+        
+        // Generate Gold first (since Silver depends on it)
+        const goldParams = INSTRUMENTS.gold;
+        const goldPath = [];
+        let goldPrice = goldParams.startPrice;
+        let goldLastDx = 0;
+        
+        for (let t = 0; t < length; t++) {
+          let dx = goldParams.drift + goldParams.volatility * randomNormal();
+          // Mean reversion
+          const mr = goldParams.meanReversion * ((goldParams.startPrice - goldPrice) / goldParams.startPrice);
+          dx += mr;
+          
+          let currentDx = goldParams.autocorr * goldLastDx + (1 - goldParams.autocorr) * dx;
+          goldLastDx = currentDx;
+          
+          let price = goldPrice * (1 + currentDx);
+          
+          // Shock event
+          let shocked = false;
+          if (Math.random() < goldParams.shockProb) {
+            shocked = true;
+            const bias = Math.random() < goldParams.shockBias ? 1 : -1;
+            price = price * (1 + bias * goldParams.shockSize * Math.abs(randomNormal()));
+          }
+          
+          goldPrice = Math.max(0.1, price);
+          
+          const spread = goldPrice * goldParams.spreadPct;
+          goldPath.push({
+            price: goldPrice,
+            bid: goldPrice - spread / 2,
+            ask: goldPrice + spread / 2,
+            shock: shocked
+          });
+        }
+        paths.gold = goldPath;
+
+        // Generate Silver correlated to Gold
+        const silverParams = INSTRUMENTS.silver;
+        const silverPath = [];
+        let silverPrice = silverParams.startPrice;
+        
+        for (let t = 0; t < length; t++) {
+          const goldRet = t === 0 ? 0 : (goldPath[t].price - goldPath[t-1].price) / goldPath[t-1].price;
+          
+          const independentDrift = silverParams.drift + silverParams.volatility * randomNormal();
+          const mr = silverParams.meanReversion * ((silverParams.startPrice - silverPrice) / silverParams.startPrice);
+          
+          const combinedRet = silverParams.correlationToGold * goldRet + 
+                              (1 - silverParams.correlationToGold) * (independentDrift + mr);
+                              
+          let price = silverPrice * (1 + combinedRet);
+          
+          // Shock
+          let shocked = false;
+          if (Math.random() < silverParams.shockProb) {
+            shocked = true;
+            price = price * (1 + (Math.random() > 0.5 ? 1 : -1) * silverParams.shockSize * Math.abs(randomNormal()));
+          }
+          
+          silverPrice = Math.max(0.01, price);
+          const spread = silverPrice * silverParams.spreadPct;
+          silverPath.push({
+            price: silverPrice,
+            bid: silverPrice - spread / 2,
+            ask: silverPrice + spread / 2,
+            shock: shocked
+          });
+        }
+        paths.silver = silverPath;
+
+        // Generate others
+        const rest = ['nasdaq', 'sp500', 'oil'];
+        rest.forEach(id => {
+          const p = INSTRUMENTS[id];
+          const path = [];
+          let currentPrice = p.startPrice;
+          let lastDx = 0;
+          
+          for (let t = 0; t < length; t++) {
+            let dx = p.drift + p.volatility * randomNormal();
+            
+            // Apply autocorrelation/momentum
+            let currentDx = p.autocorr * lastDx + (1 - p.autocorr) * dx;
+            lastDx = currentDx;
+            
+            let price = currentPrice * (1 + currentDx);
+            
+            // Shock event
+            let shocked = false;
+            if (Math.random() < p.shockProb) {
+              shocked = true;
+              let jump = p.shockSize * randomNormal();
+              // custom rule: WTI can have sudden huge drops
+              if (id === 'oil' && Math.random() < 0.4) jump = -Math.abs(jump) * 1.5;
+              price = price * (1 + jump);
+            }
+            
+            currentPrice = Math.max(0.1, price);
+            const spread = currentPrice * p.spreadPct;
+            path.push({
+              price: currentPrice,
+              bid: currentPrice - spread / 2,
+              ask: currentPrice + spread / 2,
+              shock: shocked
+            });
+          }
+          paths[id] = path;
+        });
+
+        return paths[selectedId];
+      }
+    }
+
+    // ----------------------------------------------------
+    // CFD PORTFOLIO ACCORDING & MANAGEMENT
+    // ----------------------------------------------------
+    class CFDPortfolio {
+      constructor(isPlayer = true) {
+        this.isPlayer = isPlayer;
+        this.reset();
+      }
+
+      reset() {
+        this.balance = 10000;          // Realized cash
+        this.equity = 10000;           // Cash + Floating PL
+        this.floatingPL = 0;
+        this.marginUsed = 0;
+        this.freeMargin = 10000;
+        
+        this.position = {
+          type: 'flat',                // 'flat', 'long', 'short'
+          size: 0,                     // Asset units
+          entryPrice: 0                // Entry quote
+        };
+
+        this.marginCalls = 0;
+        this.tradesCount = 0;
+        this.lockoutTicks = 0;         // Remaining lockout days
+        
+        this.equityHistory = [10000];
+        this.tradeRecords = [];        // Record of executions: { tick, type, price, size, pl }
+        this.maxEquity = 10000;
+        this.maxDrawdown = 0;
+      }
+
+      getMarginPct() {
+        if (this.equity <= 0) return 100;
+        const pct = (this.marginUsed / this.equity) * 100;
+        return Math.min(100, Math.max(0, pct));
+      }
+
+      // Enter a position
+      open(type, currentPrice, spreadPct, leverage, sizeAllocationPct) {
+        if (this.lockoutTicks > 0) return false;
+        
+        // If already in a position, close it first
+        if (this.position.type !== 'flat') {
+          this.close(currentPrice, spreadPct);
+        }
+
+        const spread = currentPrice * spreadPct;
+        const ask = currentPrice + spread / 2;
+        const bid = currentPrice - spread / 2;
+
+        const entryPrice = type === 'long' ? ask : bid;
+        
+        // Size allocation represents what % of free margin to allocate
+        const allocatedMargin = this.freeMargin * sizeAllocationPct * 0.95; // 5% buffer to prevent instant drop margin calls
+        if (allocatedMargin <= 100) return false; // Minimum margin size
+
+        const size = (allocatedMargin * leverage) / entryPrice;
+        
+        this.position = {
+          type: type,
+          size: size,
+          entryPrice: entryPrice
+        };
+
+        this.marginUsed = (size * entryPrice) / leverage;
+        this.tradesCount++;
+        
+        this.tradeRecords.push({
+          tick: GameController.priceHistory.length - 1,
+          action: 'open_' + type,
+          price: entryPrice,
+          size: size
+        });
+
+        // Instant refresh
+        this.updateStats(currentPrice, spreadPct);
+        return true;
+      }
+
+      // Close current position
+      close(currentPrice, spreadPct, isMarginCall = false) {
+        if (this.position.type === 'flat') return;
+
+        const spread = currentPrice * spreadPct;
+        const ask = currentPrice + spread / 2;
+        const bid = currentPrice - spread / 2;
+        
+        const exitPrice = this.position.type === 'long' ? bid : ask;
+        let pnl = 0;
+
+        if (this.position.type === 'long') {
+          pnl = this.position.size * (exitPrice - this.position.entryPrice);
+        } else {
+          pnl = this.position.size * (this.position.entryPrice - exitPrice);
+        }
+
+        // Apply realized P&L to cash balance
+        this.balance += pnl;
+        
+        this.tradeRecords.push({
+          tick: GameController.priceHistory.length - 1,
+          action: isMarginCall ? 'margin_call' : 'close',
+          price: exitPrice,
+          size: this.position.size,
+          pl: pnl
+        });
+
+        // Reset CFD fields
+        this.position = { type: 'flat', size: 0, entryPrice: 0 };
+        this.floatingPL = 0;
+        this.marginUsed = 0;
+        this.freeMargin = this.balance;
+        this.equity = this.balance;
+
+        if (isMarginCall) {
+          this.marginCalls++;
+          this.lockoutTicks = 5; // Lockout player/bot for 5 ticks (simulating margin liquidation cooling)
+        }
+
+        this.updateStats(currentPrice, spreadPct);
+      }
+
+      // Recalculate CFD values per price tick
+      updateStats(currentPrice, spreadPct) {
+        if (this.lockoutTicks > 0) {
+          this.lockoutTicks--;
+        }
+
+        const spread = currentPrice * spreadPct;
+        const ask = currentPrice + spread / 2;
+        const bid = currentPrice - spread / 2;
+
+        if (this.position.type !== 'flat') {
+          // Floating P&L based on opposite spread quote
+          if (this.position.type === 'long') {
+            this.floatingPL = this.position.size * (bid - this.position.entryPrice);
+          } else {
+            this.floatingPL = this.position.size * (this.position.entryPrice - ask);
+          }
+
+          // Financing Cost: 0.002% per tick (deducted from balance directly)
+          const financingCost = this.position.size * currentPrice * 0.00002;
+          this.balance -= financingCost;
+        } else {
+          this.floatingPL = 0;
+        }
+
+        this.equity = this.balance + this.floatingPL;
+        
+        // If balance drops to zero or less, equity is capped
+        if (this.equity < 0) this.equity = 0;
+
+        // Recalculate margins
+        this.freeMargin = this.equity - this.marginUsed;
+
+        // Drawdowns tracking
+        this.maxEquity = Math.max(this.maxEquity, this.equity);
+        const dd = this.maxEquity > 0 ? ((this.maxEquity - this.equity) / this.maxEquity) * 100 : 0;
+        this.maxDrawdown = Math.max(this.maxDrawdown, dd);
+
+        this.equityHistory.push(this.equity);
+
+        // MARGIN CALL LIQUIDATION TRIGGER
+        if (this.position.type !== 'flat' && this.equity < this.marginUsed) {
+          // Fire liquidation
+          this.close(currentPrice, spreadPct, true);
+          if (this.isPlayer) {
+            GameController.triggerMarginCallVisual();
+          }
+        }
+      }
+
+      // Performance analytics at end of race
+      getSharpeRatio() {
+        if (this.equityHistory.length < 2) return 0;
+        
+        const returns = [];
+        for (let i = 1; i < this.equityHistory.length; i++) {
+          const prev = this.equityHistory[i-1];
+          const ret = prev > 0 ? (this.equityHistory[i] - prev) / prev : 0;
+          returns.push(ret);
+        }
+
+        const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+        const sqDiff = returns.map(r => Math.pow(r - mean, 2));
+        const variance = sqDiff.reduce((a, b) => a + b, 0) / (returns.length - 1);
+        const stdDev = Math.sqrt(variance);
+
+        if (stdDev === 0) return 0;
+        return (mean / stdDev) * Math.sqrt(250); // annualized Sharpe (250 ticks = 1 year)
+      }
+
+      getReturnPct() {
+        return ((this.equity - 10000) / 10000) * 100;
+      }
+    }
+
+    // ----------------------------------------------------
+    // BOT OPPONENT AGENT SYSTEM
+    // ----------------------------------------------------
+    // ----------------------------------------------------
+    // BOT OPPONENT AGENT SYSTEM
+    // ----------------------------------------------------
+    class TradingBotOpponent {
+      constructor(type = 'ema_cross') {
+        this.type = type; // 'ema_cross', 'breakout', 'macd', 'regime_switch'
+        this.portfolio = new CFDPortfolio(false);
+      }
+
+      reset() {
+        this.portfolio.reset();
+      }
+
+      evaluate(history, currentPrice, spreadPct, leverage) {
+        if (this.portfolio.lockoutTicks > 0) {
+          this.portfolio.updateStats(currentPrice, spreadPct);
+          return;
+        }
+
+        const length = history.length;
+        if (length < 26) { // MACD needs 26 periods to gather EMAs
+          this.portfolio.updateStats(currentPrice, spreadPct);
+          return;
+        }
+
+        let signal = 'hold'; // 'hold', 'long', 'short'
+
+        if (this.type === 'ema_cross') {
+          signal = this.evaluateEMACross(history);
+        } else if (this.type === 'breakout') {
+          signal = this.evaluateBreakout(history);
+        } else if (this.type === 'macd') {
+          signal = this.evaluateMACD(history);
+        } else if (this.type === 'regime_switch') {
+          signal = this.evaluateRegimeSwitch(history);
+        }
+
+        // Execute signals
+        if (signal === 'long') {
+          if (this.portfolio.position.type === 'short') {
+            this.portfolio.close(currentPrice, spreadPct);
+          }
+          if (this.portfolio.position.type === 'flat') {
+            this.portfolio.open('long', currentPrice, spreadPct, leverage, 0.5);
+          }
+        } else if (signal === 'short') {
+          if (this.portfolio.position.type === 'long') {
+            this.portfolio.close(currentPrice, spreadPct);
+          }
+          if (this.portfolio.position.type === 'flat') {
+            this.portfolio.open('short', currentPrice, spreadPct, leverage, 0.5);
+          }
+        } else {
+          this.portfolio.updateStats(currentPrice, spreadPct);
+        }
+      }
+
+      evaluateEMACross(history) {
+        const ema5 = this.calcEMA(history, 5);
+        const ema20 = this.calcEMA(history, 20);
+        const prevEma5 = this.calcEMA(history.slice(0, history.length - 1), 5);
+        const prevEma20 = this.calcEMA(history.slice(0, history.length - 1), 20);
+
+        if (prevEma5 <= prevEma20 && ema5 > ema20) return 'long';
+        if (prevEma5 >= prevEma20 && ema5 < ema20) return 'short';
+        return 'hold';
+      }
+
+      evaluateBreakout(history) {
+        const bo = this.calcBreakout(history, 15);
+        if (bo.isUpper) return 'long';
+        if (bo.isLower) return 'short';
+        return 'hold';
+      }
+
+      evaluateMACD(history) {
+        const m = this.calcMACDValues(history);
+        if (m.prevMacd <= m.prevSignal && m.macd > m.signal) return 'long';
+        if (m.prevMacd >= m.prevSignal && m.macd < m.signal) return 'short';
+        return 'hold';
+      }
+
+      evaluateRegimeSwitch(history) {
+        const cv = this.calcCV(history, 15);
+        const isTrending = cv >= 0.005; // standard deviation CV threshold
+
+        if (isTrending) {
+          // Trend following: SMA Crossover
+          const sma5 = this.calcSMA(history, 5);
+          const sma20 = this.calcSMA(history, 20);
+          const prevSma5 = this.calcSMA(history.slice(0, history.length - 1), 5);
+          const prevSma20 = this.calcSMA(history.slice(0, history.length - 1), 20);
+
+          if (prevSma5 <= prevSma20 && sma5 > sma20) return 'long';
+          if (prevSma5 >= prevSma20 && sma5 < sma20) return 'short';
+        } else {
+          // Range bound mean-reversion: RSI
+          const rsi = this.calcRSI(history, 14);
+          if (rsi <= 30) return 'long';
+          if (rsi >= 70) return 'short';
+        }
+        return 'hold';
+      }
+
+      // Calculations Helpers
+      calcEMA(prices, period) {
+        if (prices.length === 0) return 0;
+        const alpha = 2 / (period + 1);
+        let ema = prices[0].price;
+        for (let i = 1; i < prices.length; i++) {
+          ema = prices[i].price * alpha + ema * (1 - alpha);
+        }
+        return ema;
+      }
+
+      calcSMA(prices, period) {
+        if (prices.length < period) return 0;
+        const slice = prices.slice(prices.length - period);
+        const sum = slice.reduce((acc, tick) => acc + tick.price, 0);
+        return sum / period;
+      }
+
+      calcBreakout(history, period = 15) {
+        if (history.length < period + 1) return { isUpper: false, isLower: false };
+        const currentPrice = history[history.length - 1].price;
+        const channelWindow = history.slice(history.length - 1 - period, history.length - 1);
+        const prices = channelWindow.map(d => d.price);
+        const highestHigh = Math.max(...prices);
+        const lowestLow = Math.min(...prices);
+        return {
+          isUpper: currentPrice > highestHigh,
+          isLower: currentPrice < lowestLow
+        };
+      }
+
+      calcMACDValues(prices) {
+        if (prices.length < 26) return { macd: 0, signal: 0, prevMacd: 0, prevSignal: 0 };
+        const alpha12 = 2 / 13;
+        const alpha26 = 2 / 27;
+        
+        let ema12 = prices[0].price;
+        let ema26 = prices[0].price;
+        const macdLineHistory = [];
+        
+        for (let i = 0; i < prices.length; i++) {
+          if (i > 0) {
+            ema12 = prices[i].price * alpha12 + ema12 * (1 - alpha12);
+            ema26 = prices[i].price * alpha26 + ema26 * (1 - alpha26);
+          }
+          macdLineHistory.push(ema12 - ema26);
+        }
+        
+        const alpha9 = 2 / 10;
+        let signal = macdLineHistory[0];
+        for (let i = 1; i < macdLineHistory.length; i++) {
+          signal = macdLineHistory[i] * alpha9 + signal * (1 - alpha9);
+        }
+        
+        const prevMacd = macdLineHistory[macdLineHistory.length - 2] || 0;
+        const prevSignal = this.calcEMAOfSeries(macdLineHistory.slice(0, macdLineHistory.length - 1), 9);
+        
+        return {
+          macd: macdLineHistory[macdLineHistory.length - 1],
+          signal: signal,
+          prevMacd: prevMacd,
+          prevSignal: prevSignal
+        };
+      }
+
+      calcEMAOfSeries(series, period) {
+        if (series.length === 0) return 0;
+        const alpha = 2 / (period + 1);
+        let ema = series[0];
+        for (let i = 1; i < series.length; i++) {
+          ema = series[i] * alpha + ema * (1 - alpha);
+        }
+        return ema;
+      }
+
+      calcCV(prices, period = 15) {
+        if (prices.length < period) return 0;
+        const window = prices.slice(prices.length - period);
+        const mean = window.reduce((acc, d) => acc + d.price, 0) / period;
+        const variance = window.reduce((acc, d) => acc + Math.pow(d.price - mean, 2), 0) / (period - 1);
+        const stdDev = Math.sqrt(variance);
+        return mean > 0 ? stdDev / mean : 0;
+      }
+
+      calcRSI(prices, period = 14) {
+        if (prices.length < period + 1) return 50;
+        let gains = [];
+        let losses = [];
+        for (let i = 1; i < prices.length; i++) {
+          const diff = prices[i].price - prices[i-1].price;
+          if (diff > 0) {
+            gains.push(diff);
+            losses.push(0);
+          } else {
+            gains.push(0);
+            losses.push(Math.abs(diff));
+          }
+        }
+        let avgGain = gains.slice(0, period).reduce((a,b)=>a+b, 0) / period;
+        let avgLoss = losses.slice(0, period).reduce((a,b)=>a+b, 0) / period;
+        for (let i = period; i < gains.length; i++) {
+          avgGain = (avgGain * (period - 1) + gains[i]) / period;
+          avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+        }
+        if (avgLoss === 0) return 100;
+        const rs = avgGain / avgLoss;
+        return 100 - 100 / (1 + rs);
+      }
+    }
+
+    // ----------------------------------------------------
+    // HIGH-FIDELITY DYNAMIC CANVAS CHARTS
+    // ----------------------------------------------------
+    class ChartRenderer {
+      constructor(priceCanvasId, equityCanvasId) {
+        this.priceCanvas = document.getElementById(priceCanvasId);
+        this.priceCtx = this.priceCanvas.getContext('2d');
+        
+        this.equityCanvas = document.getElementById(equityCanvasId);
+        this.equityCtx = this.equityCanvas.getContext('2d');
+
+        this.resizeCanvases();
+        window.addEventListener('resize', () => this.resizeCanvases());
+      }
+
+      resizeCanvases() {
+        // Price Chart
+        const pw = this.priceCanvas.parentElement.clientWidth;
+        const ph = this.priceCanvas.parentElement.clientHeight;
+        this.priceCanvas.width = pw * window.devicePixelRatio;
+        this.priceCanvas.height = ph * window.devicePixelRatio;
+        this.priceCanvas.style.width = pw + 'px';
+        this.priceCanvas.style.height = ph + 'px';
+        this.priceCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+        // Equity Chart
+        const ew = this.equityCanvas.parentElement.clientWidth;
+        const eh = this.equityCanvas.parentElement.clientHeight;
+        this.equityCanvas.width = ew * window.devicePixelRatio;
+        this.equityCanvas.height = eh * window.devicePixelRatio;
+        this.equityCanvas.style.width = ew + 'px';
+        this.equityCanvas.style.height = eh + 'px';
+        this.equityCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        
+        // Redraw
+        if (GameController.activePath) {
+          this.draw(GameController.currentTick);
+        }
+      }
+
+      draw(currentTick) {
+        this.drawPriceChart(currentTick);
+        this.drawEquityChart(currentTick);
+      }
+
+      // 1. Draw dynamic asset prices
+      drawPriceChart(currentTick) {
+        const ctx = this.priceCtx;
+        const w = this.priceCanvas.width / window.devicePixelRatio;
+        const h = this.priceCanvas.height / window.devicePixelRatio;
+
+        ctx.clearRect(0, 0, w, h);
+
+        const history = GameController.priceHistory;
+        if (history.length === 0) return;
+
+        // Render parameters
+        const paddingRight = 95;
+        const paddingTop = 20;
+        const paddingBottom = 25;
+        const paddingLeft = 15;
+        
+        const chartWidth = w - paddingLeft - paddingRight;
+        const chartHeight = h - paddingTop - paddingBottom;
+
+        // Calculate min/max price for autoscale
+        const prices = history.map(d => d.price);
+        let minPrice = Math.min(...prices);
+        let maxPrice = Math.max(...prices);
+        const diff = maxPrice - minPrice;
+        
+        // Add 8% top/bottom pad
+        minPrice -= diff * 0.08 || minPrice * 0.02;
+        maxPrice += diff * 0.08 || maxPrice * 0.02;
+
+        const getX = (index) => {
+          // Fit index into chartWidth (total size = pre-ticks + 250 ticks)
+          const totalTicks = 280; // 30 pre-ticks + 250 race ticks
+          return paddingLeft + (index / (totalTicks - 1)) * chartWidth;
+        };
+
+        const getY = (price) => {
+          return paddingTop + chartHeight - ((price - minPrice) / (maxPrice - minPrice)) * chartHeight;
+        };
+
+        // Draw horizontal grid lines
+        ctx.strokeStyle = '#161d26';
+        ctx.lineWidth = 1;
+        ctx.font = '10px "Share Tech Mono"';
+        ctx.fillStyle = '#6e7681';
+        ctx.textAlign = 'left';
+
+        const gridLines = 4;
+        for (let i = 0; i <= gridLines; i++) {
+          const yVal = minPrice + (i / gridLines) * (maxPrice - minPrice);
+          const yPos = getY(yVal);
+          ctx.beginPath();
+          ctx.moveTo(paddingLeft, yPos);
+          ctx.lineTo(w - paddingRight, yPos);
+          ctx.stroke();
+
+          // Labels on the right axis
+          ctx.fillText(yVal.toFixed(2), w - paddingRight + 8, yPos + 3);
+        }
+
+        // Draw dynamic vertical grids (every 50 days)
+        for (let t = 30; t <= 280; t += 50) {
+          const xPos = getX(t);
+          ctx.beginPath();
+          ctx.moveTo(xPos, paddingTop);
+          ctx.lineTo(xPos, h - paddingBottom);
+          ctx.stroke();
+          
+          // Day markers
+          ctx.textAlign = 'center';
+          ctx.fillText(`D${t - 30}`, xPos, h - 8);
+        }
+
+        // Draw Price Line (neon gradient style)
+        ctx.beginPath();
+        ctx.moveTo(getX(0), getY(history[0].price));
+        for (let i = 1; i < history.length; i++) {
+          ctx.lineTo(getX(i), getY(history[i].price));
+        }
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 2.5;
+        ctx.shadowColor = 'rgba(0, 229, 255, 0.4)';
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+        ctx.shadowBlur = 0; // reset
+
+        // Gradient Fill area below price line
+        const grad = ctx.createLinearGradient(0, paddingTop, 0, paddingTop + chartHeight);
+        grad.addColorStop(0, 'rgba(0, 229, 255, 0.12)');
+        grad.addColorStop(1, 'rgba(0, 229, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(getX(0), getY(history[0].price));
+        for (let i = 1; i < history.length; i++) {
+          ctx.lineTo(getX(i), getY(history[i].price));
+        }
+        ctx.lineTo(getX(history.length - 1), h - paddingBottom);
+        ctx.lineTo(getX(0), h - paddingBottom);
+        ctx.closePath();
+        ctx.fill();
+
+        // Draw Shock Events
+        history.forEach((tick, idx) => {
+          if (tick.shock) {
+            ctx.beginPath();
+            ctx.arc(getX(idx), getY(tick.price), 5, 0, 2 * Math.PI);
+            ctx.fillStyle = varColor('--neon-danger');
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = varColor('--neon-danger');
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        });
+
+        const activeTick = history[history.length - 1];
+
+        // Draw Bid/Ask Spread band at current price
+        const bidY = getY(activeTick.bid);
+        const askY = getY(activeTick.ask);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.fillRect(w - paddingRight, askY, paddingRight, bidY - askY);
+
+        ctx.strokeStyle = 'rgba(255, 51, 102, 0.3)';
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, askY);
+        ctx.lineTo(w - paddingRight, askY);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(0, 255, 136, 0.3)';
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, bidY);
+        ctx.lineTo(w - paddingRight, bidY);
+        ctx.stroke();
+
+        // Draw Player position markers (Dotted line & tag)
+        const playerPos = GameController.player.position;
+        if (playerPos.type !== 'flat') {
+          const entryY = getY(playerPos.entryPrice);
+          ctx.strokeStyle = varColor('--neon-player');
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(paddingLeft, entryY);
+          ctx.lineTo(w - paddingRight, entryY);
+          ctx.stroke();
+          ctx.setLineDash([]); // Reset
+          
+          // Draw Entry label
+          ctx.fillStyle = 'rgba(0, 255, 136, 0.15)';
+          ctx.fillRect(paddingLeft + 5, entryY - 14, 110, 13);
+          ctx.strokeStyle = varColor('--neon-player');
+          ctx.strokeRect(paddingLeft + 5, entryY - 14, 110, 13);
+          ctx.fillStyle = varColor('--neon-player');
+          ctx.font = '9px "Fira Code"';
+          ctx.textAlign = 'left';
+          ctx.fillText(`LONG Entry @${playerPos.entryPrice.toFixed(2)}`, paddingLeft + 8, entryY - 4);
+        }
+
+        // Draw Bot position markers
+        const botPos = GameController.bot.portfolio.position;
+        if (botPos.type !== 'flat') {
+          const entryY = getY(botPos.entryPrice);
+          ctx.strokeStyle = varColor('--neon-bot');
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(paddingLeft, entryY);
+          ctx.lineTo(w - paddingRight, entryY);
+          ctx.stroke();
+          ctx.setLineDash([]); // Reset
+          
+          // Entry label
+          ctx.fillStyle = 'rgba(255, 170, 0, 0.15)';
+          ctx.fillRect(paddingLeft + 5, entryY + 2, 105, 13);
+          ctx.strokeStyle = varColor('--neon-bot');
+          ctx.strokeRect(paddingLeft + 5, entryY + 2, 105, 13);
+          ctx.fillStyle = varColor('--neon-bot');
+          ctx.font = '9px "Fira Code"';
+          ctx.textAlign = 'left';
+          ctx.fillText(`BOT Entry @${botPos.entryPrice.toFixed(2)}`, paddingLeft + 8, entryY + 12);
+        }
+
+        // Highlight buy/sell events in history (bubbles/arrows)
+        const renderTx = (records, color) => {
+          records.forEach(tx => {
+            const index = tx.tick; // actual absolute index
+            if (index < history.length) {
+              const txX = getX(index);
+              const txY = getY(tx.price);
+              
+              ctx.beginPath();
+              ctx.arc(txX, txY, 4, 0, 2*Math.PI);
+              ctx.fillStyle = color;
+              ctx.fill();
+            }
+          });
+        };
+        renderTx(GameController.player.tradeRecords, varColor('--neon-player'));
+        renderTx(GameController.bot.portfolio.tradeRecords, varColor('--neon-bot'));
+      }
+
+      // 2. Draw Equity Race curves
+      drawEquityChart(currentTick) {
+        const ctx = this.equityCtx;
+        const w = this.equityCanvas.width / window.devicePixelRatio;
+        const h = this.equityCanvas.height / window.devicePixelRatio;
+
+        ctx.clearRect(0, 0, w, h);
+
+        const playerHist = GameController.player.equityHistory;
+        const botHist = GameController.bot.portfolio.equityHistory;
+        if (playerHist.length === 0) return;
+
+        const paddingRight = 15;
+        const paddingTop = 10;
+        const paddingBottom = 15;
+        const paddingLeft = 15;
+        
+        const chartWidth = w - paddingLeft - paddingRight;
+        const chartHeight = h - paddingTop - paddingBottom;
+
+        // Auto-scale y-axis based on player + bot equity extremes
+        const allEquities = [...playerHist, ...botHist];
+        let minEq = Math.min(...allEquities, 10000);
+        let maxEq = Math.max(...allEquities, 10000);
+        
+        const diff = maxEq - minEq;
+        minEq -= diff * 0.1 || minEq * 0.05;
+        maxEq += diff * 0.1 || maxEq * 0.05;
+        minEq = Math.max(0, minEq); // equity cannot go negative
+
+        const getX = (index) => {
+          return paddingLeft + (index / 250) * chartWidth;
+        };
+
+        const getY = (eq) => {
+          return paddingTop + chartHeight - ((eq - minEq) / (maxEq - minEq)) * chartHeight;
+        };
+
+        // Draw starting $10k threshold line
+        ctx.strokeStyle = '#222831';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 5]);
+        ctx.beginPath();
+        ctx.moveTo(paddingLeft, getY(10000));
+        ctx.lineTo(w - paddingRight, getY(10000));
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label initial balance line
+        ctx.font = '8px "Share Tech Mono"';
+        ctx.fillStyle = '#4e5561';
+        ctx.textAlign = 'right';
+        ctx.fillText("$10k Initial", w - paddingRight - 5, getY(10000) - 3);
+
+        // Draw Player Equity line (Green)
+        ctx.beginPath();
+        ctx.moveTo(getX(0), getY(playerHist[0]));
+        for (let i = 1; i < playerHist.length; i++) {
+          ctx.lineTo(getX(i), getY(playerHist[i]));
+        }
+        ctx.strokeStyle = varColor('--neon-player');
+        ctx.lineWidth = 2.2;
+        ctx.stroke();
+
+        // Draw Bot Equity line (Amber)
+        ctx.beginPath();
+        ctx.moveTo(getX(0), getY(botHist[0]));
+        for (let i = 1; i < botHist.length; i++) {
+          ctx.lineTo(getX(i), getY(botHist[i]));
+        }
+        ctx.strokeStyle = varColor('--neon-bot');
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // Label current values at the line ends
+        ctx.font = '9px "Share Tech Mono"';
+        ctx.textAlign = 'left';
+        
+        if (playerHist.length > 0) {
+          const pLast = playerHist[playerHist.length - 1];
+          ctx.fillStyle = varColor('--neon-player');
+          ctx.fillText(`Player: $${(pLast/1000).toFixed(1)}k`, getX(playerHist.length - 1) - 60, getY(pLast) - 6);
+        }
+
+        if (botHist.length > 0) {
+          const bLast = botHist[botHist.length - 1];
+          ctx.fillStyle = varColor('--neon-bot');
+          ctx.fillText(`Bot: $${(bLast/1000).toFixed(1)}k`, getX(botHist.length - 1) - 60, getY(bLast) + 10);
+        }
+      }
+    }
+
+    // Grab CSS custom variables
+    function varColor(variableName) {
+      return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    }
+
+    // ----------------------------------------------------
+    // GAME PROCESSOR CONTROLLER
+    // ----------------------------------------------------
+    const GameController = {
+      // Configuration
+      selectedInstrumentId: 'nasdaq',
+      selectedBotId: 'ema_cross',
+      username: 'GuestTrader',
+      isLoggedIn: false,
+      selectedLeaderboardTab: 'global',
+      leverage: 5,
+      marginAllocation: 0.5,
+
+      // Path data
+      activePath: null,         // Array of 280 generated ticks
+      preTicksCount: 30,
+      currentTick: 0,           // Active tick index of the race (0 to 250)
+
+      // Dynamic variables
+      priceHistory: [],
+      player: new CFDPortfolio(true),
+      bot: new TradingBotOpponent('ema_cross'),
+      
+      // Loops
+      speedMode: 'pause',       // 'pause', '1x', '2x', '5x'
+      runTimer: null,
+      renderer: null,
+
+      init() {
+        this.renderer = new ChartRenderer('price-chart-canvas', 'equity-chart-canvas');
+        this.renderSelectionCards();
+        this.renderBotCards();
+        this.initLeaderboard();
+        this.bindEvents();
+      },
+
+      renderSelectionCards() {
+        const grid = document.getElementById('instruments-grid');
+        grid.innerHTML = '';
+        
+        Object.keys(INSTRUMENTS).forEach(key => {
+          const asset = INSTRUMENTS[key];
+          const isSelected = key === this.selectedInstrumentId;
+
+          const card = document.createElement('div');
+          card.className = `instrument-card ${isSelected ? 'selected' : ''}`;
+          card.dataset.id = key;
+          
+          let specsHtml = '';
+          asset.specs.forEach(spec => {
+            let cl = '';
+            if (spec.toLowerCase().includes('volatility') || spec.toLowerCase().includes('wide')) cl = 'volatility';
+            if (spec.toLowerCase().includes('trending') || spec.toLowerCase().includes('tight')) cl = 'trend';
+            specsHtml += `<span class="spec-badge ${cl}">${spec}</span>`;
+          });
+
+          card.innerHTML = `
+            <div class="card-avatar">${asset.avatar}</div>
+            <div class="card-title-group">
+              <span class="card-name">${asset.name}</span>
+              <span class="card-symbol mono">${asset.symbol}</span>
+            </div>
+            <div class="card-blurb">${asset.blurb}</div>
+            <div class="card-specs">
+              ${specsHtml}
+            </div>
+          `;
+
+          card.addEventListener('click', () => {
+            document.querySelectorAll('#instruments-grid .instrument-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            this.selectedInstrumentId = key;
+          });
+
+          grid.appendChild(card);
+        });
+      },
+
+      renderBotCards() {
+        const grid = document.getElementById('bots-grid');
+        grid.innerHTML = '';
+        
+        Object.keys(BOTS).forEach(key => {
+          const bot = BOTS[key];
+          const isSelected = key === this.selectedBotId;
+
+          const card = document.createElement('div');
+          card.className = `instrument-card ${isSelected ? 'selected' : ''}`;
+          card.dataset.id = key;
+          
+          let specsHtml = '';
+          bot.specs.forEach(spec => {
+            let cl = bot.style;
+            specsHtml += `<span class="spec-badge ${cl}">${spec}</span>`;
+          });
+
+          card.innerHTML = `
+            <div class="card-avatar">${bot.avatar}</div>
+            <div class="card-title-group">
+              <span class="card-name">${bot.name}</span>
+            </div>
+            <div class="card-blurb">${bot.desc}</div>
+            <div class="card-specs">
+              ${specsHtml}
+            </div>
+          `;
+
+          card.addEventListener('click', () => {
+            document.querySelectorAll('#bots-grid .instrument-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            this.selectedBotId = key;
+          });
+
+          grid.appendChild(card);
+        });
+      },
+
+      initLeaderboard() {
+        this.username = localStorage.getItem('market_sim_username') || 'GuestTrader';
+        this.isLoggedIn = localStorage.getItem('market_sim_logged_in') === 'true';
+
+        this.updateProfileUI();
+
+        // Bind editing actions
+        document.getElementById('btn-edit-username').addEventListener('click', () => {
+          if (this.isLoggedIn) return; // Cannot edit username if logged in
+          document.getElementById('username-display-wrapper').style.display = 'none';
+          document.getElementById('username-input-wrapper').style.display = 'flex';
+          document.getElementById('username-input').focus();
+        });
+
+        const saveUsernameAction = () => {
+          if (this.isLoggedIn) return; // Cannot edit username if logged in
+          const val = document.getElementById('username-input').value.trim();
+          if (val) {
+            this.username = val;
+            localStorage.setItem('market_sim_username', val);
+            document.getElementById('profile-username').innerText = val;
+            this.renderLeaderboard();
+          }
+          document.getElementById('username-display-wrapper').style.display = 'flex';
+          document.getElementById('username-input-wrapper').style.display = 'none';
+        };
+
+        document.getElementById('btn-save-username').addEventListener('click', saveUsernameAction);
+        
+        document.getElementById('username-input').addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            saveUsernameAction();
+          }
+        });
+
+        // Bind tab buttons
+        const tabGlobal = document.getElementById('tab-leaderboard-global');
+        const tabPersonal = document.getElementById('tab-leaderboard-personal');
+
+        tabGlobal.addEventListener('click', () => {
+          this.selectedLeaderboardTab = 'global';
+          tabGlobal.className = 'mono text-cyan';
+          tabGlobal.style.borderBottom = '2px solid var(--neon-cyan)';
+          tabPersonal.className = 'mono text-neutral';
+          tabPersonal.style.borderBottom = 'none';
+          this.renderLeaderboard();
+        });
+
+        tabPersonal.addEventListener('click', () => {
+          this.selectedLeaderboardTab = 'personal';
+          tabPersonal.className = 'mono text-cyan';
+          tabPersonal.style.borderBottom = '2px solid var(--neon-cyan)';
+          tabGlobal.className = 'mono text-neutral';
+          tabGlobal.style.borderBottom = 'none';
+          this.renderLeaderboard();
+        });
+
+        // Reset Leaderboard action
+        document.getElementById('btn-reset-leaderboard').addEventListener('click', () => {
+          if (confirm('Are you sure you want to reset the leaderboard and stats? This cannot be undone.')) {
+            if (sql && this.isLoggedIn) {
+              alert("Cannot reset global public leaderboard directly from front-end.");
+            } else {
+              localStorage.removeItem('market_sim_leaderboard');
+              this.renderLeaderboard();
+            }
+          }
+        });
+
+        if (sql) {
+          tabGlobal.innerText = "GLOBAL RANKINGS (LIVE)";
+        } else {
+          tabGlobal.innerText = "GLOBAL RANKINGS (OFFLINE)";
+        }
+
+        this.renderLeaderboard();
+      },
+
+      updateProfileUI() {
+        document.getElementById('profile-username').innerText = this.username;
+        document.getElementById('username-input').value = this.username;
+        
+        const modeLabel = document.getElementById('profile-mode');
+        const authBtn = document.getElementById('btn-auth-trigger');
+        const editBtn = document.getElementById('btn-edit-username');
+
+        if (this.isLoggedIn) {
+          modeLabel.innerText = "MODE: REGISTERED (LIVE)";
+          modeLabel.className = "text-player mono"; // Green
+          authBtn.innerText = "LOG OUT";
+          authBtn.style.borderColor = "var(--neon-danger)";
+          authBtn.style.color = "var(--neon-danger)";
+          authBtn.style.background = "rgba(255, 51, 102, 0.1)";
+          editBtn.style.display = "none";
+        } else {
+          modeLabel.innerText = "MODE: GUEST";
+          modeLabel.className = "text-neutral mono";
+          authBtn.innerText = "LOG IN / REGISTER";
+          authBtn.style.borderColor = "var(--neon-cyan)";
+          authBtn.style.color = "var(--neon-cyan)";
+          authBtn.style.background = "rgba(0, 229, 255, 0.1)";
+          editBtn.style.display = "inline";
+        }
+      },
+
+      async handleAuthSubmit(mode) {
+        if (!sql) {
+          const errId = mode === 'login' ? 'login-error' : 'register-error';
+          const errEl = document.getElementById(errId);
+          errEl.innerText = "Database connection is offline. Cannot authenticate.";
+          errEl.style.display = "block";
+          return;
+        }
+
+        if (mode === 'login') {
+          const user = document.getElementById('login-username').value.trim();
+          const pass = document.getElementById('login-password').value;
+          const errEl = document.getElementById('login-error');
+          errEl.style.display = 'none';
+
+          if (!user || !pass) {
+            errEl.innerText = "Please fill in all fields.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          try {
+            const rows = await sql`
+              SELECT * FROM market_sim_users WHERE username = ${user}
+            `;
+            if (rows.length === 0) {
+              errEl.innerText = "Username does not exist.";
+              errEl.style.display = 'block';
+              return;
+            }
+
+            const dbUser = rows[0];
+            const computedHash = await hashPassword(user, pass);
+            if (computedHash !== dbUser.password_hash) {
+              errEl.innerText = "Incorrect password.";
+              errEl.style.display = 'block';
+              return;
+            }
+
+            this.username = dbUser.username;
+            this.isLoggedIn = true;
+            localStorage.setItem('market_sim_username', this.username);
+            localStorage.setItem('market_sim_logged_in', 'true');
+            
+            this.updateProfileUI();
+            this.renderLeaderboard();
+            document.getElementById('auth-modal-overlay').classList.remove('active');
+          } catch (e) {
+            console.error("Login failed:", e);
+            errEl.innerText = "Database error. Please try again.";
+            errEl.style.display = 'block';
+          }
+        } else {
+          // Register
+          const user = document.getElementById('register-username').value.trim();
+          const pass = document.getElementById('register-password').value;
+          const errEl = document.getElementById('register-error');
+          errEl.style.display = 'none';
+
+          if (!user || !pass) {
+            errEl.innerText = "Please fill in all fields.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          if (user.length < 3) {
+            errEl.innerText = "Username must be at least 3 characters.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          if (user.toLowerCase() === 'guesttrader') {
+            errEl.innerText = "Invalid username selection.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          if (!/^[a-zA-Z0-9_]+$/.test(user)) {
+            errEl.innerText = "Username must be alphanumeric.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          try {
+            const rows = await sql`
+              SELECT id FROM market_sim_users WHERE username = ${user}
+            `;
+            if (rows.length > 0) {
+              errEl.innerText = "Username already taken.";
+              errEl.style.display = 'block';
+              return;
+            }
+
+            const passHash = await hashPassword(user, pass);
+            await sql`
+              INSERT INTO market_sim_users (username, password_hash)
+              VALUES (${user}, ${passHash})
+            `;
+
+            this.username = user;
+            this.isLoggedIn = true;
+            localStorage.setItem('market_sim_username', this.username);
+            localStorage.setItem('market_sim_logged_in', 'true');
+
+            this.updateProfileUI();
+            this.renderLeaderboard();
+            document.getElementById('auth-modal-overlay').classList.remove('active');
+          } catch (e) {
+            console.error("Registration failed:", e);
+            errEl.innerText = "Database error. Please try again.";
+            errEl.style.display = 'block';
+          }
+        }
+      },
+
+      async renderLeaderboard() {
+        const fameBody = document.querySelector('#fame-table tbody');
+        const shameBody = document.querySelector('#shame-table tbody');
+
+        fameBody.innerHTML = '';
+        shameBody.innerHTML = '';
+
+        const isGlobal = this.selectedLeaderboardTab === 'global';
+
+        if (sql) {
+          try {
+            let fameList, shameList;
+            if (isGlobal) {
+              fameList = await sql`
+                SELECT username, market, return_pct 
+                FROM market_sim_leaderboard 
+                ORDER BY return_pct DESC 
+                LIMIT 5
+              `;
+              shameList = await sql`
+                SELECT username, market, return_pct 
+                FROM market_sim_leaderboard 
+                ORDER BY return_pct ASC 
+                LIMIT 5
+              `;
+            } else {
+              fameList = await sql`
+                SELECT username, market, return_pct 
+                FROM market_sim_leaderboard 
+                WHERE username = ${this.username}
+                ORDER BY return_pct DESC 
+                LIMIT 5
+              `;
+              shameList = await sql`
+                SELECT username, market, return_pct 
+                FROM market_sim_leaderboard 
+                WHERE username = ${this.username}
+                ORDER BY return_pct ASC 
+                LIMIT 5
+              `;
+            }
+
+            this.renderLeaderboardRows(fameBody, fameList);
+            this.renderLeaderboardRows(shameBody, shameList);
+            return;
+          } catch (e) {
+            console.error("Neon DB query failed, falling back to LocalStorage:", e);
+          }
+        }
+
+        // Local Storage Fallback
+        const history = JSON.parse(localStorage.getItem('market_sim_leaderboard') || '[]');
+        
+        let filteredHistory = [...history];
+        if (!isGlobal) {
+          filteredHistory = history.filter(x => x.username === this.username);
+        }
+
+        const fameList = [...filteredHistory]
+          .sort((a, b) => b.returnPct - a.returnPct)
+          .slice(0, 5);
+
+        const shameList = [...filteredHistory]
+          .sort((a, b) => a.returnPct - b.returnPct)
+          .slice(0, 5);
+
+        this.renderLeaderboardRows(fameBody, fameList.map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct })));
+        this.renderLeaderboardRows(shameBody, shameList.map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct })));
+      },
+
+      renderLeaderboardRows(tbody, list) {
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--neon-neutral); padding: 15px 0;">No records</td></tr>`;
+        } else {
+          list.forEach(entry => {
+            const tr = document.createElement('tr');
+            const colorClass = entry.return_pct >= 0 ? 'player' : 'danger';
+            tr.innerHTML = `
+              <td style="text-align: left; padding: 6px 4px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(entry.username)}</td>
+              <td style="padding: 6px 4px; color: var(--neon-cyan);">${entry.market}</td>
+              <td style="text-align: right; padding: 6px 4px; color: var(--neon-${colorClass}); font-weight: 700;">${entry.return_pct >= 0 ? '+' : ''}${entry.return_pct.toFixed(1)}%</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      },
+
+      async saveRun(returnPct, sharpe) {
+        if (sql && this.isLoggedIn) {
+          try {
+            await sql`
+              INSERT INTO market_sim_leaderboard (username, market, bot, return_pct, sharpe)
+              VALUES (${this.username}, ${INSTRUMENTS[this.selectedInstrumentId].symbol}, ${BOTS[this.selectedBotId].name}, ${returnPct}, ${sharpe})
+            `;
+            this.renderLeaderboard();
+            return;
+          } catch (e) {
+            console.error("Neon DB insert failed, falling back to LocalStorage:", e);
+          }
+        }
+
+        const history = JSON.parse(localStorage.getItem('market_sim_leaderboard') || '[]');
+        const newRun = {
+          username: this.username || 'GuestTrader',
+          market: INSTRUMENTS[this.selectedInstrumentId].symbol,
+          bot: BOTS[this.selectedBotId].name,
+          returnPct: returnPct,
+          sharpe: sharpe,
+          timestamp: Date.now()
+        };
+        history.push(newRun);
+        localStorage.setItem('market_sim_leaderboard', JSON.stringify(history));
+        this.renderLeaderboard();
+      },
+
+      bindEvents() {
+        // Enter Arena
+        document.getElementById('btn-enter-arena').addEventListener('click', () => this.startRace());
+
+        // Leverage Toggles
+        document.querySelectorAll('.btn-leverage').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.btn-leverage').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            this.leverage = parseInt(btn.dataset.leverage);
+          });
+        });
+
+        // Speed controllers
+        document.getElementById('btn-speed-pause').addEventListener('click', () => this.setSpeed('pause'));
+        document.getElementById('btn-speed-1x').addEventListener('click', () => this.setSpeed('1x'));
+        document.getElementById('btn-speed-2x').addEventListener('click', () => this.setSpeed('2x'));
+        document.getElementById('btn-speed-5x').addEventListener('click', () => this.setSpeed('5x'));
+        
+        // Exit Arena
+        document.getElementById('btn-exit-arena').addEventListener('click', () => this.exitArena());
+
+        // Trade Actions
+        document.getElementById('btn-trade-long').addEventListener('click', () => this.executePlayerTrade('long'));
+        document.getElementById('btn-trade-short').addEventListener('click', () => this.executePlayerTrade('short'));
+        document.getElementById('btn-trade-close').addEventListener('click', () => this.executePlayerClose());
+        document.getElementById('btn-trade-hold').addEventListener('click', () => this.tickStep());
+
+        // Size allocation
+        document.querySelectorAll('.btn-size').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.btn-size').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            this.marginAllocation = parseFloat(btn.dataset.pct);
+          });
+        });
+
+        // Results Modals
+        document.getElementById('btn-modal-rematch').addEventListener('click', () => {
+          document.getElementById('results-modal-overlay').classList.remove('active');
+          this.startRace();
+        });
+        document.getElementById('btn-modal-back').addEventListener('click', () => {
+          document.getElementById('results-modal-overlay').classList.remove('active');
+          this.exitArena();
+        });
+        document.getElementById('btn-modal-share').addEventListener('click', () => this.copySummaryToClipboard());
+
+        // Authentication Dialog Triggers
+        const authModal = document.getElementById('auth-modal-overlay');
+        const authTrigger = document.getElementById('btn-auth-trigger');
+        const closeAuthBtn = document.getElementById('btn-close-auth');
+        
+        authTrigger.addEventListener('click', () => {
+          if (this.isLoggedIn) {
+            this.isLoggedIn = false;
+            this.username = 'GuestTrader';
+            localStorage.setItem('market_sim_username', 'GuestTrader');
+            localStorage.setItem('market_sim_logged_in', 'false');
+            this.updateProfileUI();
+            this.renderLeaderboard();
+          } else {
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            document.getElementById('register-username').value = '';
+            document.getElementById('register-password').value = '';
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('register-error').style.display = 'none';
+            authModal.classList.add('active');
+          }
+        });
+
+        closeAuthBtn.addEventListener('click', () => {
+          authModal.classList.remove('active');
+        });
+
+        // Tabs in Auth Modal
+        const tabLogin = document.getElementById('tab-auth-login');
+        const tabRegister = document.getElementById('tab-auth-register');
+        const loginView = document.getElementById('auth-login-view');
+        const registerView = document.getElementById('auth-register-view');
+
+        tabLogin.addEventListener('click', () => {
+          tabLogin.className = 'mono text-cyan';
+          tabLogin.style.borderBottom = '2px solid var(--neon-cyan)';
+          tabRegister.className = 'mono text-neutral';
+          tabRegister.style.borderBottom = 'none';
+          loginView.style.display = 'flex';
+          registerView.style.display = 'none';
+        });
+
+        tabRegister.addEventListener('click', () => {
+          tabRegister.className = 'mono text-cyan';
+          tabRegister.style.borderBottom = '2px solid var(--neon-cyan)';
+          tabLogin.className = 'mono text-neutral';
+          tabLogin.style.borderBottom = 'none';
+          loginView.style.display = 'none';
+          registerView.style.display = 'flex';
+        });
+
+        // Submit buttons
+        document.getElementById('btn-submit-login').addEventListener('click', () => this.handleAuthSubmit('login'));
+        document.getElementById('btn-submit-register').addEventListener('click', () => this.handleAuthSubmit('register'));
+      },
+
+      startRace() {
+        // 1. Reset metrics
+        this.currentTick = 0;
+        this.priceHistory = [];
+        this.player.reset();
+        
+        // Instantiate the selected bot
+        this.bot = new TradingBotOpponent(this.selectedBotId);
+        this.bot.reset();
+        
+        // Set labels
+        document.getElementById('player-leverage-badge').innerText = `1:${this.leverage}`;
+        document.getElementById('bot-leverage-badge').innerText = `1:${this.leverage}`;
+
+        // Update Bot Card Title dynamically
+        document.querySelector('.portfolio-card.bot .portfolio-title').innerText = `ALGO [${BOTS[this.selectedBotId].name.toUpperCase()}]`;
+
+        // 2. Generate path data
+        const asset = INSTRUMENTS[this.selectedInstrumentId];
+        document.getElementById('arena-ticker-name').innerText = asset.name;
+        document.getElementById('arena-ticker-symbol').innerText = `[${asset.symbol}]`;
+        document.getElementById('arena-ticker-price').innerText = formatUSD(asset.startPrice);
+
+        this.activePath = PriceEngine.generateFullPaths(this.selectedInstrumentId);
+        
+        // 3. Pre-populate initial 30 ticks so indicators are ready
+        for (let i = 0; i < this.preTicksCount; i++) {
+          this.priceHistory.push(this.activePath[i]);
+        }
+
+        // 4. Update HUD
+        this.updateArenaUI();
+
+        // 5. Swap screen views
+        document.getElementById('selection-screen').classList.remove('active');
+        document.getElementById('arena-screen').classList.add('active');
+
+        // 6. Force canvas resize
+        this.renderer.resizeCanvases();
+
+        // 7. Auto pause
+        this.setSpeed('pause');
+      },
+
+      exitArena() {
+        this.setSpeed('pause');
+        document.getElementById('arena-screen').classList.remove('active');
+        document.getElementById('selection-screen').classList.add('active');
+      },
+
+      setSpeed(mode) {
+        this.speedMode = mode;
+        
+        // Update control buttons active class
+        document.querySelectorAll('.game-controls .btn-control').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        
+        if (mode === 'pause') document.getElementById('btn-speed-pause').classList.add('active');
+        if (mode === '1x') document.getElementById('btn-speed-1x').classList.add('active');
+        if (mode === '2x') document.getElementById('btn-speed-2x').classList.add('active');
+        if (mode === '5x') document.getElementById('btn-speed-5x').classList.add('active');
+
+        // Clear active run loops
+        if (this.runTimer) {
+          clearInterval(this.runTimer);
+          this.runTimer = null;
+        }
+
+        if (mode !== 'pause') {
+          let intervalMs = 1000;
+          if (mode === '2x') intervalMs = 450;
+          if (mode === '5x') intervalMs = 150;
+          
+          this.runTimer = setInterval(() => {
+            this.tickStep();
+          }, intervalMs);
+        }
+      },
+
+      executePlayerTrade(direction) {
+        if (this.player.lockoutTicks > 0) return;
+        const currentData = this.priceHistory[this.priceHistory.length - 1];
+        const asset = INSTRUMENTS[this.selectedInstrumentId];
+        
+        const success = this.player.open(direction, currentData.price, asset.spreadPct, this.leverage, this.marginAllocation);
+        if (success) {
+          this.updateArenaUI();
+          this.renderer.draw(this.currentTick);
+        }
+      },
+
+      executePlayerClose() {
+        const currentData = this.priceHistory[this.priceHistory.length - 1];
+        const asset = INSTRUMENTS[this.selectedInstrumentId];
+        
+        this.player.close(currentData.price, asset.spreadPct);
+        this.updateArenaUI();
+        this.renderer.draw(this.currentTick);
+      },
+
+      // Proceed forward by 1 tick (Day)
+      tickStep() {
+        if (this.currentTick >= 250) {
+          this.endRace();
+          return;
+        }
+
+        this.currentTick++;
+        
+        // Grab new price feed tick
+        const pathIndex = this.preTicksCount + this.currentTick - 1;
+        const newTickData = this.activePath[pathIndex];
+        this.priceHistory.push(newTickData);
+
+        const asset = INSTRUMENTS[this.selectedInstrumentId];
+
+        // 1. Run Bot Brain crossover evaluation
+        this.bot.evaluate(this.priceHistory, newTickData.price, asset.spreadPct, this.leverage);
+
+        // 2. Update player active statistics
+        this.player.updateStats(newTickData.price, asset.spreadPct);
+
+        // 3. Render
+        this.updateArenaUI();
+        this.renderer.draw(this.currentTick);
+
+        // 4. Check if race complete
+        if (this.currentTick >= 250) {
+          this.endRace();
+        }
+      },
+
+      // Highlight Margin call events dynamically
+      triggerMarginCallVisual() {
+        const overlay = document.getElementById('margin-call-overlay');
+        const dashboard = document.getElementById('arena-screen');
+        
+        overlay.classList.add('active');
+        dashboard.classList.add('shake-screen');
+        
+        setTimeout(() => {
+          overlay.classList.remove('active');
+          dashboard.classList.remove('shake-screen');
+        }, 1500);
+      },
+
+      // Keep user interfaces synchronized
+      updateArenaUI() {
+        const currentData = this.priceHistory[this.priceHistory.length - 1];
+        const prevData = this.priceHistory[this.priceHistory.length - 2];
+        const asset = INSTRUMENTS[this.selectedInstrumentId];
+
+        // Update Header Day Counter
+        document.getElementById('tick-counter').innerText = `${this.currentTick}/250`;
+
+        // Update Spot Price Flash
+        const priceLabel = document.getElementById('arena-ticker-price');
+        priceLabel.innerText = formatUSD(currentData.price);
+        
+        if (prevData) {
+          priceLabel.classList.remove('up', 'down');
+          if (currentData.price > prevData.price) {
+            priceLabel.classList.add('up');
+          } else if (currentData.price < prevData.price) {
+            priceLabel.classList.add('down');
+          }
+        }
+
+        // Sync Player card fields
+        this.renderPortfolioCard(this.player, 'player');
+
+        // Sync Bot card fields
+        this.renderPortfolioCard(this.bot.portfolio, 'bot');
+
+        // Swap action buttons depending on player position
+        const longBtn = document.getElementById('btn-trade-long');
+        const shortBtn = document.getElementById('btn-trade-short');
+        const closeBtn = document.getElementById('btn-trade-close');
+
+        if (this.player.position.type === 'flat') {
+          longBtn.style.display = 'block';
+          shortBtn.style.display = 'block';
+          closeBtn.style.display = 'none';
+        } else {
+          longBtn.style.display = 'none';
+          shortBtn.style.display = 'none';
+          closeBtn.style.display = 'block';
+          closeBtn.innerText = `CLOSE ${this.player.position.type.toUpperCase()} POSITION`;
+        }
+
+        // Toggle action buttons lock when player liquidated/lockout
+        const isLockedOut = this.player.lockoutTicks > 0;
+        longBtn.disabled = isLockedOut;
+        shortBtn.disabled = isLockedOut;
+        closeBtn.disabled = isLockedOut;
+        
+        // Update bottom race track stats header labels
+        document.getElementById('race-player-eq').innerText = `$${(this.player.equity/1000).toFixed(1)}k`;
+        document.getElementById('race-bot-eq').innerText = `$${(this.bot.portfolio.equity/1000).toFixed(1)}k`;
+      },
+
+      renderPortfolioCard(port, prefix) {
+        // Equity value animation
+        const eqLabel = document.getElementById(`${prefix}-equity`);
+        const oldEq = parseFloat(eqLabel.innerText.replace(/[$,]/g, '')) || 10000;
+        
+        eqLabel.innerText = formatUSD(port.equity);
+        eqLabel.classList.remove('up', 'down');
+        
+        if (port.equity > oldEq) {
+          eqLabel.classList.add('up');
+        } else if (port.equity < oldEq) {
+          eqLabel.classList.add('down');
+        }
+
+        // Cash Balance & Floating PL
+        document.getElementById(`${prefix}-balance`).innerText = formatUSD(port.balance);
+        
+        const floatLabel = document.getElementById(`${prefix}-floating-pl`);
+        floatLabel.innerText = formatUSD(port.floatingPL);
+        floatLabel.className = 'mono'; // Reset
+        if (port.floatingPL > 0) floatLabel.classList.add('text-player');
+        if (port.floatingPL < 0) floatLabel.classList.add('text-danger');
+
+        // Lockout Screen Control
+        const lockoutOverlay = document.getElementById(`${prefix}-lockout`);
+        const lockoutText = document.getElementById(`${prefix}-lockout-text`);
+        if (port.lockoutTicks > 0) {
+          lockoutOverlay.classList.add('active');
+          lockoutText.innerText = `Re-opening in: ${port.lockoutTicks} days`;
+        } else {
+          lockoutOverlay.classList.remove('active');
+        }
+
+        // Margin Utilization
+        const marginPct = port.getMarginPct();
+        document.getElementById(`${prefix}-margin-percent`).innerText = `${marginPct.toFixed(0)}%`;
+        
+        const marginBar = document.getElementById(`${prefix}-margin-bar`);
+        marginBar.style.width = `${marginPct}%`;
+        marginBar.className = 'margin-bar-fill'; // reset
+        if (marginPct > 80) marginBar.classList.add('danger');
+        else if (marginPct > 50) marginBar.classList.add('warning');
+
+        document.getElementById(`${prefix}-margin-used`).innerText = formatUSD(port.marginUsed);
+        document.getElementById(`${prefix}-margin-free`).innerText = formatUSD(port.freeMargin);
+
+        // Position Badge
+        const posBadge = document.getElementById(`${prefix}-position-badge`);
+        posBadge.innerText = port.position.type;
+        posBadge.className = `position-state-badge ${port.position.type}`;
+
+        const detailsPanel = document.getElementById(`${prefix}-pos-details`);
+        if (port.position.type !== 'flat') {
+          detailsPanel.style.display = 'grid';
+          document.getElementById(`${prefix}-pos-size`).innerText = port.position.size.toFixed(2);
+          document.getElementById(`${prefix}-pos-entry`).innerText = formatUSD(port.position.entryPrice);
+        } else {
+          detailsPanel.style.display = 'none';
+        }
+      },
+
+      // End of Race sequence & modal rendering
+      endRace() {
+        this.setSpeed('pause');
+
+        // Close any outstanding open trades
+        const lastTick = this.priceHistory[this.priceHistory.length - 1];
+        const asset = INSTRUMENTS[this.selectedInstrumentId];
+        this.player.close(lastTick.price, asset.spreadPct);
+        this.bot.portfolio.close(lastTick.price, asset.spreadPct);
+
+        // Redraw canvases
+        this.renderer.draw(this.currentTick);
+
+        // Save run results to leaderboard
+        this.saveRun(this.player.getReturnPct(), this.player.getSharpeRatio());
+
+        // Compute results modal fields
+        const playEq = this.player.equity;
+        const botEq = this.bot.portfolio.equity;
+        const botName = BOTS[this.selectedBotId].name;
+
+        const banner = document.getElementById('winner-banner');
+        banner.className = 'winner-banner';
+        if (playEq > botEq) {
+          banner.innerText = '🏆 PLAYER WINS!';
+          banner.classList.add('player-win');
+        } else if (botEq > playEq) {
+          banner.innerText = `🤖 ${botName.toUpperCase()} WINS!`;
+          banner.classList.add('bot-win');
+        } else {
+          banner.innerText = '⚖️ DRAW!';
+          banner.classList.add('draw');
+        }
+
+        // Fill stats table values
+        document.getElementById('res-play-equity').innerText = formatUSD(playEq);
+        document.getElementById('res-bot-equity').innerText = formatUSD(botEq);
+
+        document.getElementById('res-play-return').innerText = formatPct(this.player.getReturnPct());
+        document.getElementById('res-bot-return').innerText = formatPct(this.bot.portfolio.getReturnPct());
+
+        document.getElementById('res-play-mdd').innerText = `${this.player.maxDrawdown.toFixed(2)}%`;
+        document.getElementById('res-bot-mdd').innerText = `${this.bot.portfolio.maxDrawdown.toFixed(2)}%`;
+
+        document.getElementById('res-play-sharpe').innerText = this.player.getSharpeRatio().toFixed(2);
+        document.getElementById('res-bot-sharpe').innerText = this.bot.portfolio.getSharpeRatio().toFixed(2);
+
+        document.getElementById('res-play-trades').innerText = this.player.tradesCount;
+        document.getElementById('res-bot-trades').innerText = this.bot.portfolio.tradesCount;
+
+        document.getElementById('res-play-margin-calls').innerText = this.player.marginCalls;
+        document.getElementById('res-bot-margin-calls').innerText = this.bot.portfolio.marginCalls;
+
+        // Set bot name in table th
+        document.querySelector('.results-table th.text-bot').innerText = botName;
+
+        // Show Modal
+        document.getElementById('results-modal-overlay').classList.add('active');
+      },
+
+      copySummaryToClipboard() {
+        const playEq = formatUSD(this.player.equity);
+        const botEq = formatUSD(this.bot.portfolio.equity);
+        const asset = INSTRUMENTS[this.selectedInstrumentId].name;
+        const botName = BOTS[this.selectedBotId].name;
+        
+        const summary = `--- MARKET SIM ARENA SUMMARY ---
+Instrument: ${asset}
+Opponent: ${botName}
+Leverage: 1:${this.leverage}
+Player Final Equity: ${playEq} (Return: ${formatPct(this.player.getReturnPct())}, Sharpe: ${this.player.getSharpeRatio().toFixed(2)})
+${botName} Final Equity: ${botEq} (Return: ${formatPct(this.bot.portfolio.getReturnPct())}, Sharpe: ${this.bot.portfolio.getSharpeRatio().toFixed(2)})
+Margin Calls: Player: ${this.player.marginCalls} | Bot: ${this.bot.portfolio.marginCalls}
+🏆 Winner: ${this.player.equity > this.bot.portfolio.equity ? 'Player' : botName}
+---------------------------------`;
+
+        navigator.clipboard.writeText(summary).then(() => {
+          const shareBtn = document.getElementById('btn-modal-share');
+          const origText = shareBtn.innerText;
+          shareBtn.innerText = 'COPIED!';
+          shareBtn.style.color = varColor('--neon-player');
+          setTimeout(() => {
+            shareBtn.innerText = origText;
+            shareBtn.style.color = '#fff';
+          }, 1500);
+        });
+      }
+    };
+
+    // Initialize Game
+    window.addEventListener('DOMContentLoaded', () => {
+      GameController.init();
+    });
+  </script>
+</body>
+</html>
