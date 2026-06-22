@@ -3,7 +3,7 @@
 Welcome to **Market Sim Arena**! This is a fast-paced, cyberpunk-themed web game where you go head-to-head against an AI trading bot. Instead of just clicking buttons, you'll use real-world financial mechanics to try and outsmart both the market and the machine.
 
 ## Link to Game
-xxx
+https://alfin0226.github.io/Market-Sim-Arena/
 
 ## How the Game Works
 
