@@ -142,11 +142,35 @@
     }
 
     .selection-container {
-      max-width: 1200px;
+      max-width: 1250px;
       width: 100%;
       display: flex;
       flex-direction: column;
       gap: 30px;
+    }
+
+    .selection-grid-layout {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 30px;
+      width: 100%;
+    }
+
+    .selection-left-pane {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .selection-right-pane {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 1050px) {
+      .selection-grid-layout {
+        grid-template-columns: 1fr;
+      }
     }
 
     /* Cards Grid */
@@ -1110,42 +1134,111 @@
     <div class="selection-container">
       <div class="selection-header">
         <h1>Market Sim Arena</h1>
-        <p>Choose an asset, configure leverage, and compete against the algorithmic trading bot</p>
+        <p>Configure your market race, select your bot opponent, and trade live CFDs</p>
       </div>
 
-      <div>
-        <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 1: Choose Market Instrument</div>
-        <!-- Instrument Selection Cards Grid -->
-        <div class="cards-grid" id="instruments-grid" style="margin-bottom: 25px;">
-          <!-- Javascript renders cards here -->
-        </div>
-      </div>
+      <div class="selection-grid-layout">
+        <!-- Left Pane: All config steps -->
+        <div class="selection-left-pane">
+          <div>
+            <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 1: Choose Market Instrument</div>
+            <!-- Instrument Selection Cards Grid -->
+            <div class="cards-grid" id="instruments-grid" style="margin-bottom: 10px;">
+              <!-- Javascript renders cards here -->
+            </div>
+          </div>
 
-      <div>
-        <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 2: Choose Opponent Bot</div>
-        <!-- Bot Selection Cards Grid -->
-        <div class="cards-grid" id="bots-grid" style="margin-bottom: 15px;">
-          <!-- Javascript renders cards here -->
-        </div>
-      </div>
+          <div>
+            <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 2: Choose Opponent Bot</div>
+            <!-- Bot Selection Cards Grid -->
+            <div class="cards-grid" id="bots-grid" style="margin-bottom: 10px;">
+              <!-- Javascript renders cards here -->
+            </div>
+          </div>
 
-      <!-- Configuration Panel -->
-      <div class="config-panel">
-        <div class="config-group">
-          <div class="config-label">Account Leverage</div>
-          <div class="leverage-selector">
-            <button class="btn-leverage active" data-leverage="5">1:5</button>
-            <button class="btn-leverage" data-leverage="10">1:10</button>
-            <button class="btn-leverage" data-leverage="20">1:20</button>
+          <!-- Configuration Panel -->
+          <div class="config-panel">
+            <div class="config-group">
+              <div class="config-label">Account Leverage</div>
+              <div class="leverage-selector">
+                <button class="btn-leverage active" data-leverage="5">1:5</button>
+                <button class="btn-leverage" data-leverage="10">1:10</button>
+                <button class="btn-leverage" data-leverage="20">1:20</button>
+              </div>
+            </div>
+
+            <div class="config-group">
+              <div class="config-label" style="text-align: right;">Initial Balance</div>
+              <div class="mono" style="font-size: 1.6rem; font-weight: 700; color: #fff;">$10,000.00</div>
+            </div>
+
+            <button class="btn-launch" id="btn-enter-arena">Enter Arena</button>
           </div>
         </div>
 
-        <div class="config-group">
-          <div class="config-label" style="text-align: right;">Initial Balance</div>
-          <div class="mono" style="font-size: 1.6rem; font-weight: 700; color: #fff;">$10,000.00</div>
-        </div>
+        <!-- Right Pane: User Profile & Leaderboard -->
+        <div class="selection-right-pane">
+          <!-- User Profile Box -->
+          <div class="portfolio-card player" style="margin-bottom: 20px; border-left: 3px solid var(--neon-player);">
+            <span class="portfolio-title text-player">TRADER PROFILE</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; min-height: 38px;">
+              <div id="username-display-wrapper" style="display: flex; align-items: center; gap: 8px; width: 100%; justify-content: space-between;">
+                <span id="profile-username" class="mono" style="font-size: 1.1rem; color: #fff; border-bottom: 1px dashed var(--neon-player); cursor: pointer;">GuestTrader</span>
+                <span style="font-size: 0.8rem; cursor: pointer; color: var(--neon-neutral);" id="btn-edit-username">✏️ Edit</span>
+              </div>
+              <div id="username-input-wrapper" style="display: none; align-items: center; gap: 8px; width: 100%;">
+                <input type="text" id="username-input" class="mono" style="background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 1rem; width: 70%;" maxlength="12">
+                <button class="btn-control" id="btn-save-username" style="padding: 4px 8px; background: rgba(0,255,136,0.1); border-color: var(--neon-player); color: var(--neon-player);">Save</button>
+              </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 0.72rem; border-top: 1px solid var(--border-color); padding-top: 8px;">
+              <span id="profile-mode" class="text-neutral mono">MODE: GUEST</span>
+              <button class="btn-control" id="btn-auth-trigger" style="padding: 2px 6px; font-size: 0.68rem; background: rgba(0, 229, 255, 0.1); border-color: var(--neon-cyan); color: var(--neon-cyan); cursor: pointer;">LOG IN / REGISTER</button>
+            </div>
+          </div>
 
-        <button class="btn-launch" id="btn-enter-arena">Enter Arena</button>
+          <!-- Leaderboard Box -->
+          <div class="portfolio-card" style="border-left: 3px solid var(--neon-cyan); flex-grow: 1; display: flex; flex-direction: column;">
+            <!-- Tabs Navigation -->
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+              <span id="tab-leaderboard-global" class="mono text-cyan" style="cursor: pointer; font-size: 0.8rem; font-weight: 700; border-bottom: 2px solid var(--neon-cyan); padding-bottom: 4px; transition: all 0.2s;">GLOBAL RANKINGS</span>
+              <span id="tab-leaderboard-personal" class="mono text-neutral" style="cursor: pointer; font-size: 0.8rem; font-weight: 700; padding-bottom: 4px; transition: all 0.2s;">MY RECORDS</span>
+            </div>
+
+            <span class="portfolio-title text-cyan" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;" id="fame-title">🏆 WALL OF FAME (TOP 5)</span>
+            <table class="results-table" style="font-size: 0.72rem; margin-bottom: 20px; width: 100%;" id="fame-table">
+              <thead>
+                <tr>
+                  <th style="text-align: left; padding: 6px 4px;">Trader</th>
+                  <th style="padding: 6px 4px;">Market</th>
+                  <th style="text-align: right; padding: 6px 4px;">Return</th>
+                </tr>
+              </thead>
+              <tbody class="mono">
+                <!-- Dynamic rows -->
+              </tbody>
+            </table>
+
+            <span class="portfolio-title text-danger" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;" id="shame-title">💀 WALL OF SHAME (TOP 5)</span>
+            <table class="results-table" style="font-size: 0.72rem; width: 100%;" id="shame-table">
+              <thead>
+                <tr>
+                  <th style="text-align: left; padding: 6px 4px;">Trader</th>
+                  <th style="padding: 6px 4px;">Market</th>
+                  <th style="text-align: right; padding: 6px 4px;">Return</th>
+                </tr>
+              </thead>
+              <tbody class="mono">
+                <!-- Dynamic rows -->
+              </tbody>
+            </table>
+            
+            <div style="text-align: right; margin-top: auto; padding-top: 15px;">
+              <span style="font-size: 0.65rem; cursor: pointer; color: var(--neon-danger); text-decoration: underline;" id="btn-reset-leaderboard">Reset Leaderboard</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1429,8 +1522,68 @@
     </div>
   </div>
 
+  <!-- AUTHENTICATION (LOGIN/REGISTER) MODAL -->
+  <div class="modal-overlay" id="auth-modal-overlay">
+    <div class="results-modal" style="max-width: 400px; border-left: 3px solid var(--neon-cyan);">
+      <div class="results-header" style="margin-bottom: 20px;">
+        <h2 style="font-size: 1.3rem;">ACCESS CONTROL</h2>
+        <div style="display: flex; gap: 15px; margin-top: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+          <span id="tab-auth-login" class="mono text-cyan" style="cursor: pointer; font-size: 0.82rem; font-weight: 700; border-bottom: 2px solid var(--neon-cyan); padding-bottom: 4px; transition: all 0.2s;">LOG IN</span>
+          <span id="tab-auth-register" class="mono text-neutral" style="cursor: pointer; font-size: 0.82rem; font-weight: 700; padding-bottom: 4px; transition: all 0.2s;">REGISTER</span>
+        </div>
+      </div>
+      
+      <!-- Login View -->
+      <div id="auth-login-view" style="display: flex; flex-direction: column; gap: 15px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span class="config-label" style="font-size: 0.72rem;">Username</span>
+          <input type="text" id="login-username" class="mono" style="width: 100%; background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; font-size: 0.9rem;" placeholder="Enter username" maxlength="12">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span class="config-label" style="font-size: 0.72rem;">Password</span>
+          <input type="password" id="login-password" class="mono" style="width: 100%; background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; font-size: 0.9rem;" placeholder="Enter password">
+        </div>
+        <div id="login-error" class="text-danger mono" style="font-size: 0.72rem; display: none;"></div>
+        <button class="btn-launch" id="btn-submit-login" style="margin-top: 10px; height: 38px; font-size: 0.9rem;">Log In</button>
+      </div>
+
+      <!-- Register View -->
+      <div id="auth-register-view" style="display: none; flex-direction: column; gap: 15px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span class="config-label" style="font-size: 0.72rem;">New Username</span>
+          <input type="text" id="register-username" class="mono" style="width: 100%; background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; font-size: 0.9rem;" placeholder="Pick username (max 12 chars)" maxlength="12">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <span class="config-label" style="font-size: 0.72rem;">Password</span>
+          <input type="password" id="register-password" class="mono" style="width: 100%; background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 8px; border-radius: 4px; font-size: 0.9rem;" placeholder="Choose password">
+        </div>
+        <div id="register-error" class="text-danger mono" style="font-size: 0.72rem; display: none;"></div>
+        <button class="btn-launch" id="btn-submit-register" style="margin-top: 10px; height: 38px; font-size: 0.9rem;">Create Account</button>
+      </div>
+      
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <button class="btn-control" id="btn-close-auth" style="padding: 4px 10px; font-size: 0.75rem;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT GAME ENGINE -->
-  <script>
+  <script type="module">
+    import { neon } from 'https://esm.run/@neondatabase/serverless@0.9.3';
+
+    // --- NEON DATABASE SETUP ---
+    // Expose connection string here to enable live global rankings!
+    // Example: "postgresql://username:password@ep-cool-breeze-123456.us-east-2.aws.neon.tech/neondb?sslmode=require"
+    const NEON_DB_URL = ""; 
+
+    let sql = null;
+    if (NEON_DB_URL) {
+      try {
+        sql = neon(NEON_DB_URL);
+      } catch (e) {
+        console.error("Failed to initialize Neon database client:", e);
+      }
+    }
     // ----------------------------------------------------
     // CONSTANTS & INSTRUMENT PROFILES
     // ----------------------------------------------------
@@ -1574,6 +1727,20 @@
     function formatPct(val) {
       const sign = val >= 0 ? '+' : '';
       return `${sign}${val.toFixed(2)}%`;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    async function hashPassword(username, password) {
+      const salt = `market-sim-salt-${username.toLowerCase()}`;
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password + salt);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
     }
 
     // ----------------------------------------------------
@@ -2462,6 +2629,9 @@
       // Configuration
       selectedInstrumentId: 'nasdaq',
       selectedBotId: 'ema_cross',
+      username: 'GuestTrader',
+      isLoggedIn: false,
+      selectedLeaderboardTab: 'global',
       leverage: 5,
       marginAllocation: 0.5,
 
@@ -2484,6 +2654,7 @@
         this.renderer = new ChartRenderer('price-chart-canvas', 'equity-chart-canvas');
         this.renderSelectionCards();
         this.renderBotCards();
+        this.initLeaderboard();
         this.bindEvents();
       },
 
@@ -2568,6 +2739,341 @@
         });
       },
 
+      initLeaderboard() {
+        this.username = localStorage.getItem('market_sim_username') || 'GuestTrader';
+        this.isLoggedIn = localStorage.getItem('market_sim_logged_in') === 'true';
+
+        this.updateProfileUI();
+
+        // Bind editing actions
+        document.getElementById('btn-edit-username').addEventListener('click', () => {
+          if (this.isLoggedIn) return; // Cannot edit username if logged in
+          document.getElementById('username-display-wrapper').style.display = 'none';
+          document.getElementById('username-input-wrapper').style.display = 'flex';
+          document.getElementById('username-input').focus();
+        });
+
+        const saveUsernameAction = () => {
+          if (this.isLoggedIn) return; // Cannot edit username if logged in
+          const val = document.getElementById('username-input').value.trim();
+          if (val) {
+            this.username = val;
+            localStorage.setItem('market_sim_username', val);
+            document.getElementById('profile-username').innerText = val;
+            this.renderLeaderboard();
+          }
+          document.getElementById('username-display-wrapper').style.display = 'flex';
+          document.getElementById('username-input-wrapper').style.display = 'none';
+        };
+
+        document.getElementById('btn-save-username').addEventListener('click', saveUsernameAction);
+        
+        document.getElementById('username-input').addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            saveUsernameAction();
+          }
+        });
+
+        // Bind tab buttons
+        const tabGlobal = document.getElementById('tab-leaderboard-global');
+        const tabPersonal = document.getElementById('tab-leaderboard-personal');
+
+        tabGlobal.addEventListener('click', () => {
+          this.selectedLeaderboardTab = 'global';
+          tabGlobal.className = 'mono text-cyan';
+          tabGlobal.style.borderBottom = '2px solid var(--neon-cyan)';
+          tabPersonal.className = 'mono text-neutral';
+          tabPersonal.style.borderBottom = 'none';
+          this.renderLeaderboard();
+        });
+
+        tabPersonal.addEventListener('click', () => {
+          this.selectedLeaderboardTab = 'personal';
+          tabPersonal.className = 'mono text-cyan';
+          tabPersonal.style.borderBottom = '2px solid var(--neon-cyan)';
+          tabGlobal.className = 'mono text-neutral';
+          tabGlobal.style.borderBottom = 'none';
+          this.renderLeaderboard();
+        });
+
+        // Reset Leaderboard action
+        document.getElementById('btn-reset-leaderboard').addEventListener('click', () => {
+          if (confirm('Are you sure you want to reset the leaderboard and stats? This cannot be undone.')) {
+            if (sql && this.isLoggedIn) {
+              alert("Cannot reset global public leaderboard directly from front-end.");
+            } else {
+              localStorage.removeItem('market_sim_leaderboard');
+              this.renderLeaderboard();
+            }
+          }
+        });
+
+        if (sql) {
+          tabGlobal.innerText = "GLOBAL RANKINGS (LIVE)";
+        } else {
+          tabGlobal.innerText = "GLOBAL RANKINGS (OFFLINE)";
+        }
+
+        this.renderLeaderboard();
+      },
+
+      updateProfileUI() {
+        document.getElementById('profile-username').innerText = this.username;
+        document.getElementById('username-input').value = this.username;
+        
+        const modeLabel = document.getElementById('profile-mode');
+        const authBtn = document.getElementById('btn-auth-trigger');
+        const editBtn = document.getElementById('btn-edit-username');
+
+        if (this.isLoggedIn) {
+          modeLabel.innerText = "MODE: REGISTERED (LIVE)";
+          modeLabel.className = "text-player mono"; // Green
+          authBtn.innerText = "LOG OUT";
+          authBtn.style.borderColor = "var(--neon-danger)";
+          authBtn.style.color = "var(--neon-danger)";
+          authBtn.style.background = "rgba(255, 51, 102, 0.1)";
+          editBtn.style.display = "none";
+        } else {
+          modeLabel.innerText = "MODE: GUEST";
+          modeLabel.className = "text-neutral mono";
+          authBtn.innerText = "LOG IN / REGISTER";
+          authBtn.style.borderColor = "var(--neon-cyan)";
+          authBtn.style.color = "var(--neon-cyan)";
+          authBtn.style.background = "rgba(0, 229, 255, 0.1)";
+          editBtn.style.display = "inline";
+        }
+      },
+
+      async handleAuthSubmit(mode) {
+        if (!sql) {
+          const errId = mode === 'login' ? 'login-error' : 'register-error';
+          const errEl = document.getElementById(errId);
+          errEl.innerText = "Database connection is offline. Cannot authenticate.";
+          errEl.style.display = "block";
+          return;
+        }
+
+        if (mode === 'login') {
+          const user = document.getElementById('login-username').value.trim();
+          const pass = document.getElementById('login-password').value;
+          const errEl = document.getElementById('login-error');
+          errEl.style.display = 'none';
+
+          if (!user || !pass) {
+            errEl.innerText = "Please fill in all fields.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          try {
+            const rows = await sql`
+              SELECT * FROM market_sim_users WHERE username = ${user}
+            `;
+            if (rows.length === 0) {
+              errEl.innerText = "Username does not exist.";
+              errEl.style.display = 'block';
+              return;
+            }
+
+            const dbUser = rows[0];
+            const computedHash = await hashPassword(user, pass);
+            if (computedHash !== dbUser.password_hash) {
+              errEl.innerText = "Incorrect password.";
+              errEl.style.display = 'block';
+              return;
+            }
+
+            this.username = dbUser.username;
+            this.isLoggedIn = true;
+            localStorage.setItem('market_sim_username', this.username);
+            localStorage.setItem('market_sim_logged_in', 'true');
+            
+            this.updateProfileUI();
+            this.renderLeaderboard();
+            document.getElementById('auth-modal-overlay').classList.remove('active');
+          } catch (e) {
+            console.error("Login failed:", e);
+            errEl.innerText = "Database error. Please try again.";
+            errEl.style.display = 'block';
+          }
+        } else {
+          // Register
+          const user = document.getElementById('register-username').value.trim();
+          const pass = document.getElementById('register-password').value;
+          const errEl = document.getElementById('register-error');
+          errEl.style.display = 'none';
+
+          if (!user || !pass) {
+            errEl.innerText = "Please fill in all fields.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          if (user.length < 3) {
+            errEl.innerText = "Username must be at least 3 characters.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          if (user.toLowerCase() === 'guesttrader') {
+            errEl.innerText = "Invalid username selection.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          if (!/^[a-zA-Z0-9_]+$/.test(user)) {
+            errEl.innerText = "Username must be alphanumeric.";
+            errEl.style.display = 'block';
+            return;
+          }
+
+          try {
+            const rows = await sql`
+              SELECT id FROM market_sim_users WHERE username = ${user}
+            `;
+            if (rows.length > 0) {
+              errEl.innerText = "Username already taken.";
+              errEl.style.display = 'block';
+              return;
+            }
+
+            const passHash = await hashPassword(user, pass);
+            await sql`
+              INSERT INTO market_sim_users (username, password_hash)
+              VALUES (${user}, ${passHash})
+            `;
+
+            this.username = user;
+            this.isLoggedIn = true;
+            localStorage.setItem('market_sim_username', this.username);
+            localStorage.setItem('market_sim_logged_in', 'true');
+
+            this.updateProfileUI();
+            this.renderLeaderboard();
+            document.getElementById('auth-modal-overlay').classList.remove('active');
+          } catch (e) {
+            console.error("Registration failed:", e);
+            errEl.innerText = "Database error. Please try again.";
+            errEl.style.display = 'block';
+          }
+        }
+      },
+
+      async renderLeaderboard() {
+        const fameBody = document.querySelector('#fame-table tbody');
+        const shameBody = document.querySelector('#shame-table tbody');
+
+        fameBody.innerHTML = '';
+        shameBody.innerHTML = '';
+
+        const isGlobal = this.selectedLeaderboardTab === 'global';
+
+        if (sql) {
+          try {
+            let fameList, shameList;
+            if (isGlobal) {
+              fameList = await sql`
+                SELECT username, market, return_pct 
+                FROM market_sim_leaderboard 
+                ORDER BY return_pct DESC 
+                LIMIT 5
+              `;
+              shameList = await sql`
+                SELECT username, market, return_pct 
+                FROM market_sim_leaderboard 
+                ORDER BY return_pct ASC 
+                LIMIT 5
+              `;
+            } else {
+              fameList = await sql`
+                SELECT username, market, return_pct 
+                FROM market_sim_leaderboard 
+                WHERE username = ${this.username}
+                ORDER BY return_pct DESC 
+                LIMIT 5
+              `;
+              shameList = await sql`
+                SELECT username, market, return_pct 
+                FROM market_sim_leaderboard 
+                WHERE username = ${this.username}
+                ORDER BY return_pct ASC 
+                LIMIT 5
+              `;
+            }
+
+            this.renderLeaderboardRows(fameBody, fameList);
+            this.renderLeaderboardRows(shameBody, shameList);
+            return;
+          } catch (e) {
+            console.error("Neon DB query failed, falling back to LocalStorage:", e);
+          }
+        }
+
+        // Local Storage Fallback
+        const history = JSON.parse(localStorage.getItem('market_sim_leaderboard') || '[]');
+        
+        let filteredHistory = [...history];
+        if (!isGlobal) {
+          filteredHistory = history.filter(x => x.username === this.username);
+        }
+
+        const fameList = [...filteredHistory]
+          .sort((a, b) => b.returnPct - a.returnPct)
+          .slice(0, 5);
+
+        const shameList = [...filteredHistory]
+          .sort((a, b) => a.returnPct - b.returnPct)
+          .slice(0, 5);
+
+        this.renderLeaderboardRows(fameBody, fameList.map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct })));
+        this.renderLeaderboardRows(shameBody, shameList.map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct })));
+      },
+
+      renderLeaderboardRows(tbody, list) {
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--neon-neutral); padding: 15px 0;">No records</td></tr>`;
+        } else {
+          list.forEach(entry => {
+            const tr = document.createElement('tr');
+            const colorClass = entry.return_pct >= 0 ? 'player' : 'danger';
+            tr.innerHTML = `
+              <td style="text-align: left; padding: 6px 4px; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(entry.username)}</td>
+              <td style="padding: 6px 4px; color: var(--neon-cyan);">${entry.market}</td>
+              <td style="text-align: right; padding: 6px 4px; color: var(--neon-${colorClass}); font-weight: 700;">${entry.return_pct >= 0 ? '+' : ''}${entry.return_pct.toFixed(1)}%</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      },
+
+      async saveRun(returnPct, sharpe) {
+        if (sql && this.isLoggedIn) {
+          try {
+            await sql`
+              INSERT INTO market_sim_leaderboard (username, market, bot, return_pct, sharpe)
+              VALUES (${this.username}, ${INSTRUMENTS[this.selectedInstrumentId].symbol}, ${BOTS[this.selectedBotId].name}, ${returnPct}, ${sharpe})
+            `;
+            this.renderLeaderboard();
+            return;
+          } catch (e) {
+            console.error("Neon DB insert failed, falling back to LocalStorage:", e);
+          }
+        }
+
+        const history = JSON.parse(localStorage.getItem('market_sim_leaderboard') || '[]');
+        const newRun = {
+          username: this.username || 'GuestTrader',
+          market: INSTRUMENTS[this.selectedInstrumentId].symbol,
+          bot: BOTS[this.selectedBotId].name,
+          returnPct: returnPct,
+          sharpe: sharpe,
+          timestamp: Date.now()
+        };
+        history.push(newRun);
+        localStorage.setItem('market_sim_leaderboard', JSON.stringify(history));
+        this.renderLeaderboard();
+      },
+
       bindEvents() {
         // Enter Arena
         document.getElementById('btn-enter-arena').addEventListener('click', () => this.startRace());
@@ -2615,6 +3121,62 @@
           this.exitArena();
         });
         document.getElementById('btn-modal-share').addEventListener('click', () => this.copySummaryToClipboard());
+
+        // Authentication Dialog Triggers
+        const authModal = document.getElementById('auth-modal-overlay');
+        const authTrigger = document.getElementById('btn-auth-trigger');
+        const closeAuthBtn = document.getElementById('btn-close-auth');
+        
+        authTrigger.addEventListener('click', () => {
+          if (this.isLoggedIn) {
+            this.isLoggedIn = false;
+            this.username = 'GuestTrader';
+            localStorage.setItem('market_sim_username', 'GuestTrader');
+            localStorage.setItem('market_sim_logged_in', 'false');
+            this.updateProfileUI();
+            this.renderLeaderboard();
+          } else {
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            document.getElementById('register-username').value = '';
+            document.getElementById('register-password').value = '';
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('register-error').style.display = 'none';
+            authModal.classList.add('active');
+          }
+        });
+
+        closeAuthBtn.addEventListener('click', () => {
+          authModal.classList.remove('active');
+        });
+
+        // Tabs in Auth Modal
+        const tabLogin = document.getElementById('tab-auth-login');
+        const tabRegister = document.getElementById('tab-auth-register');
+        const loginView = document.getElementById('auth-login-view');
+        const registerView = document.getElementById('auth-register-view');
+
+        tabLogin.addEventListener('click', () => {
+          tabLogin.className = 'mono text-cyan';
+          tabLogin.style.borderBottom = '2px solid var(--neon-cyan)';
+          tabRegister.className = 'mono text-neutral';
+          tabRegister.style.borderBottom = 'none';
+          loginView.style.display = 'flex';
+          registerView.style.display = 'none';
+        });
+
+        tabRegister.addEventListener('click', () => {
+          tabRegister.className = 'mono text-cyan';
+          tabRegister.style.borderBottom = '2px solid var(--neon-cyan)';
+          tabLogin.className = 'mono text-neutral';
+          tabLogin.style.borderBottom = 'none';
+          loginView.style.display = 'none';
+          registerView.style.display = 'flex';
+        });
+
+        // Submit buttons
+        document.getElementById('btn-submit-login').addEventListener('click', () => this.handleAuthSubmit('login'));
+        document.getElementById('btn-submit-register').addEventListener('click', () => this.handleAuthSubmit('register'));
       },
 
       startRace() {
@@ -2892,6 +3454,9 @@
 
         // Redraw canvases
         this.renderer.draw(this.currentTick);
+
+        // Save run results to leaderboard
+        this.saveRun(this.player.getReturnPct(), this.player.getSharpeRatio());
 
         // Compute results modal fields
         const playEq = this.player.equity;

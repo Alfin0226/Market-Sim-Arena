@@ -41,3 +41,61 @@ When the 250-day race is over, the game judges you and the bot on professional f
 1. **Total Return**: The raw percentage of profit or loss made from the starting baseline of \$10,000.
 2. **Max Drawdown**: The single largest, most terrifying peak-to-trough percentage drop your account balance suffered.
 3. **Annualized Sharpe Ratio**: The "smart risk" score. It measures whether your profits were actually worth the stressful, volatile swings you took to get them.
+
+---
+
+## Database & Live Leaderboard Setup (Secure Integration)
+
+This game features a live global leaderboard powered by **Neon Serverless Postgres**. To keep your credentials secure, the connection string is managed via environment variables (never committed to git).
+
+### 1. Create the Database Tables
+
+Log into your [Neon Console](https://console.neon.tech/), create a new Postgres database, and run the following script in the Neon **SQL Editor** to initialize the player user accounts and the leaderboard:
+
+```sql
+-- 1. Create User Accounts Table
+CREATE TABLE IF NOT EXISTS market_sim_users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(12) UNIQUE NOT NULL,
+    password_hash VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Create Leaderboard Runs Table
+CREATE TABLE IF NOT EXISTS market_sim_leaderboard (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(12) NOT NULL,
+    market VARCHAR(10) NOT NULL,
+    bot VARCHAR(50) NOT NULL,
+    return_pct DOUBLE PRECISION NOT NULL,
+    sharpe DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 2. Local Development (using `.env`)
+
+1. Copy `.env.example` to a new file named `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Open the `.env` file and replace the template connection string with your actual Neon database URL.
+3. Start the secure development server:
+   ```bash
+   node dev.js
+   ```
+4. Open your browser and navigate to `http://localhost:3000`. The server will dynamically inject the connection string in-memory. Your `.env` file is ignored by Git, keeping your credentials safe.
+
+### 3. Production Deployment (using GitHub Secrets)
+
+This repository includes a GitHub Actions workflow `.github/workflows/deploy.yml` that securely deploys the game to GitHub Pages.
+
+1. Go to your repository settings on GitHub.
+2. Navigate to **Settings** -> **Secrets and variables** -> **Actions**.
+3. Click **New repository secret**.
+4. Name the secret **`NEON_DB_URL`** and paste your Neon database connection string as the value.
+5. Push your code to the `main` branch. The GitHub Action will check out the code, securely inject the database URL into `index.html` during the build step, and deploy the clean build to the `gh-pages` branch.
+
+### 4. Local Storage Fallback
+
+If no `NEON_DB_URL` is found (for example, when running `index.html` directly from the filesystem without `dev.js`), the game automatically falls back to your browser's `LocalStorage`. This ensures offline play works out-of-the-box.
