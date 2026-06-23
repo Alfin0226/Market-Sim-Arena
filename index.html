@@ -1125,6 +1125,43 @@
         flex: 1 1 300px;
       }
     }
+
+    /* Selection Navigation Tab Bar */
+    .selection-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 10px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: none;
+      color: var(--neon-neutral);
+      font-family: var(--font-display);
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 8px 16px;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+      letter-spacing: 1px;
+    }
+
+    .nav-tab:hover {
+      color: #fff;
+    }
+
+    .nav-tab.active {
+      color: var(--neon-cyan);
+      border-bottom: 2px solid var(--neon-cyan);
+    }
   </style>
 </head>
 <body>
@@ -1137,77 +1174,81 @@
         <p>Configure your market race, select your bot opponent, and trade live CFDs</p>
       </div>
 
-      <div class="selection-grid-layout">
-        <!-- Left Pane: All config steps -->
-        <div class="selection-left-pane">
-          <div>
-            <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 1: Choose Market Instrument</div>
-            <!-- Instrument Selection Cards Grid -->
-            <div class="cards-grid" id="instruments-grid" style="margin-bottom: 10px;">
-              <!-- Javascript renders cards here -->
+      <!-- Navigation Tab Bar & Profile Badge -->
+      <div class="selection-nav">
+        <div style="display: flex; gap: 15px;">
+          <button class="nav-tab active" id="tab-nav-lobby">ARENA LOBBY</button>
+          <button class="nav-tab" id="tab-nav-leaderboard">LEADERBOARDS</button>
+        </div>
+        
+        <!-- Trader Profile Badge (replaces the right-hand panel box) -->
+        <div class="profile-badge-wrapper" style="display: flex; align-items: center; gap: 15px; border: 1px solid var(--border-color); padding: 5px 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.02);">
+          <div class="mono" style="font-size: 0.8rem; color: #fff; display: flex; align-items: center; gap: 6px;">
+            <span style="color: var(--neon-neutral);">TRADER:</span>
+            <div id="username-display-wrapper" style="display: flex; align-items: center; gap: 5px;">
+              <span id="profile-username" class="text-player" style="border-bottom: 1px dashed var(--neon-player); cursor: pointer; font-weight: 700;">GuestTrader</span>
+              <span id="btn-edit-username" style="cursor: pointer; font-size: 0.75rem; color: var(--neon-neutral);" title="Edit Name">✏️</span>
+            </div>
+            <div id="username-input-wrapper" style="display: none; align-items: center; gap: 4px;">
+              <input type="text" id="username-input" class="mono" style="background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; width: 90px;" maxlength="12">
+              <button class="btn-control" id="btn-save-username" style="padding: 2px 6px; font-size: 0.7rem; background: rgba(0,255,136,0.1); border-color: var(--neon-player); color: var(--neon-player);">Save</button>
             </div>
           </div>
+          
+          <span id="profile-mode" class="text-neutral mono" style="font-size: 0.72rem; border-left: 1px solid var(--border-color); padding-left: 12px;">MODE: GUEST</span>
+          <button class="btn-control" id="btn-auth-trigger" style="padding: 3px 8px; font-size: 0.7rem; background: rgba(0, 229, 255, 0.1); border-color: var(--neon-cyan); color: var(--neon-cyan); cursor: pointer;">LOG IN / REGISTER</button>
+        </div>
+      </div>
 
-          <div>
-            <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 2: Choose Opponent Bot</div>
-            <!-- Bot Selection Cards Grid -->
-            <div class="cards-grid" id="bots-grid" style="margin-bottom: 10px;">
-              <!-- Javascript renders cards here -->
-            </div>
-          </div>
-
-          <!-- Configuration Panel -->
-          <div class="config-panel">
-            <div class="config-group">
-              <div class="config-label">Account Leverage</div>
-              <div class="leverage-selector">
-                <button class="btn-leverage active" data-leverage="5">1:5</button>
-                <button class="btn-leverage" data-leverage="10">1:10</button>
-                <button class="btn-leverage" data-leverage="20">1:20</button>
+      <!-- Tab View 1: Arena Lobby -->
+      <div id="sub-screen-lobby" class="sub-screen">
+        <div class="selection-grid-layout" style="grid-template-columns: 1fr;">
+          <div class="selection-left-pane">
+            <div>
+              <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 1: Choose Market Instrument</div>
+              <div class="cards-grid" id="instruments-grid" style="margin-bottom: 10px;">
+                <!-- Javascript renders cards here -->
               </div>
             </div>
 
-            <div class="config-group">
-              <div class="config-label" style="text-align: right;">Initial Balance</div>
-              <div class="mono" style="font-size: 1.6rem; font-weight: 700; color: #fff;">$10,000.00</div>
+            <div>
+              <div class="config-label" style="margin-bottom: 12px; font-weight: 700; letter-spacing: 1px;">Step 2: Choose Opponent Bot</div>
+              <div class="cards-grid" id="bots-grid" style="margin-bottom: 10px;">
+                <!-- Javascript renders cards here -->
+              </div>
             </div>
 
-            <button class="btn-launch" id="btn-enter-arena">Enter Arena</button>
+            <div class="config-panel">
+              <div class="config-group">
+                <div class="config-label">Account Leverage</div>
+                <div class="leverage-selector">
+                  <button class="btn-leverage active" data-leverage="5">1:5</button>
+                  <button class="btn-leverage" data-leverage="10">1:10</button>
+                  <button class="btn-leverage" data-leverage="20">1:20</button>
+                </div>
+              </div>
+
+              <div class="config-group">
+                <div class="config-label" style="text-align: right;">Initial Balance</div>
+                <div class="mono" style="font-size: 1.6rem; font-weight: 700; color: #fff;">$10,000.00</div>
+              </div>
+
+              <button class="btn-launch" id="btn-enter-arena">Enter Arena</button>
+            </div>
           </div>
         </div>
+      </div>
 
-        <!-- Right Pane: User Profile & Leaderboard -->
-        <div class="selection-right-pane">
-          <!-- User Profile Box -->
-          <div class="portfolio-card player" style="margin-bottom: 20px; border-left: 3px solid var(--neon-player);">
-            <span class="portfolio-title text-player">TRADER PROFILE</span>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px; min-height: 38px;">
-              <div id="username-display-wrapper" style="display: flex; align-items: center; gap: 8px; width: 100%; justify-content: space-between;">
-                <span id="profile-username" class="mono" style="font-size: 1.1rem; color: #fff; border-bottom: 1px dashed var(--neon-player); cursor: pointer;">GuestTrader</span>
-                <span style="font-size: 0.8rem; cursor: pointer; color: var(--neon-neutral);" id="btn-edit-username">✏️ Edit</span>
-              </div>
-              <div id="username-input-wrapper" style="display: none; align-items: center; gap: 8px; width: 100%;">
-                <input type="text" id="username-input" class="mono" style="background: var(--bg-darkest); border: 1px solid var(--border-color); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 1rem; width: 70%;" maxlength="12">
-                <button class="btn-control" id="btn-save-username" style="padding: 4px 8px; background: rgba(0,255,136,0.1); border-color: var(--neon-player); color: var(--neon-player);">Save</button>
-              </div>
-            </div>
+      <!-- Tab View 2: Leaderboards (Full Page Side-by-Side) -->
+      <div id="sub-screen-leaderboards" class="sub-screen" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%;">
+          
+          <!-- Global Rankings Panel -->
+          <div class="portfolio-card" style="border-left: 3px solid var(--neon-cyan); display: flex; flex-direction: column; padding: 25px; min-height: 520px; background: var(--bg-card);">
+            <h2 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; letter-spacing: 1px;" class="mono text-cyan">GLOBAL RANKINGS (OVERALL)</h2>
             
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 0.72rem; border-top: 1px solid var(--border-color); padding-top: 8px;">
-              <span id="profile-mode" class="text-neutral mono">MODE: GUEST</span>
-              <button class="btn-control" id="btn-auth-trigger" style="padding: 2px 6px; font-size: 0.68rem; background: rgba(0, 229, 255, 0.1); border-color: var(--neon-cyan); color: var(--neon-cyan); cursor: pointer;">LOG IN / REGISTER</button>
-            </div>
-          </div>
-
-          <!-- Leaderboard Box -->
-          <div class="portfolio-card" style="border-left: 3px solid var(--neon-cyan); flex-grow: 1; display: flex; flex-direction: column;">
-            <!-- Tabs Navigation -->
-            <div style="display: flex; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
-              <span id="tab-leaderboard-global" class="mono text-cyan" style="cursor: pointer; font-size: 0.8rem; font-weight: 700; border-bottom: 2px solid var(--neon-cyan); padding-bottom: 4px; transition: all 0.2s;">GLOBAL RANKINGS</span>
-              <span id="tab-leaderboard-personal" class="mono text-neutral" style="cursor: pointer; font-size: 0.8rem; font-weight: 700; padding-bottom: 4px; transition: all 0.2s;">MY RECORDS</span>
-            </div>
-
-            <span class="portfolio-title text-cyan" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;" id="fame-title">🏆 WALL OF FAME (TOP 5)</span>
-            <table class="results-table" style="font-size: 0.72rem; margin-bottom: 20px; width: 100%;" id="fame-table">
+            <span class="portfolio-title text-cyan" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;">🏆 WALL OF FAME (TOP 5)</span>
+            <table class="results-table" style="font-size: 0.75rem; margin-bottom: 25px; width: 100%;" id="fame-table-global">
               <thead>
                 <tr>
                   <th style="text-align: left; padding: 6px 4px;">Trader</th>
@@ -1216,12 +1257,12 @@
                 </tr>
               </thead>
               <tbody class="mono">
-                <!-- Dynamic rows -->
+                <!-- Dynamic global fame rows -->
               </tbody>
             </table>
 
-            <span class="portfolio-title text-danger" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;" id="shame-title">💀 WALL OF SHAME (TOP 5)</span>
-            <table class="results-table" style="font-size: 0.72rem; width: 100%;" id="shame-table">
+            <span class="portfolio-title text-danger" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;">💀 WALL OF SHAME (TOP 5)</span>
+            <table class="results-table" style="font-size: 0.75rem; width: 100%;" id="shame-table-global">
               <thead>
                 <tr>
                   <th style="text-align: left; padding: 6px 4px;">Trader</th>
@@ -1230,14 +1271,48 @@
                 </tr>
               </thead>
               <tbody class="mono">
-                <!-- Dynamic rows -->
+                <!-- Dynamic global shame rows -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Personal Records Panel -->
+          <div class="portfolio-card" style="border-left: 3px solid var(--neon-player); display: flex; flex-direction: column; padding: 25px; min-height: 520px; background: var(--bg-card);">
+            <h2 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px; letter-spacing: 1px;" class="mono text-player">MY RECORDS (INDIVIDUAL)</h2>
+            
+            <span class="portfolio-title text-cyan" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;">🏆 PERSONAL BESTS (TOP 5)</span>
+            <table class="results-table" style="font-size: 0.75rem; margin-bottom: 25px; width: 100%;" id="fame-table-personal">
+              <thead>
+                <tr>
+                  <th style="text-align: left; padding: 6px 4px;">Trader</th>
+                  <th style="padding: 6px 4px;">Market</th>
+                  <th style="text-align: right; padding: 6px 4px;">Return</th>
+                </tr>
+              </thead>
+              <tbody class="mono">
+                <!-- Dynamic personal bests rows -->
+              </tbody>
+            </table>
+
+            <span class="portfolio-title text-danger" style="margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 0.5px;">💀 PERSONAL WORSTS (TOP 5)</span>
+            <table class="results-table" style="font-size: 0.75rem; width: 100%;" id="shame-table-personal">
+              <thead>
+                <tr>
+                  <th style="text-align: left; padding: 6px 4px;">Trader</th>
+                  <th style="padding: 6px 4px;">Market</th>
+                  <th style="text-align: right; padding: 6px 4px;">Return</th>
+                </tr>
+              </thead>
+              <tbody class="mono">
+                <!-- Dynamic personal worsts rows -->
               </tbody>
             </table>
             
             <div style="text-align: right; margin-top: auto; padding-top: 15px;">
-              <span style="font-size: 0.65rem; cursor: pointer; color: var(--neon-danger); text-decoration: underline;" id="btn-reset-leaderboard">Reset Leaderboard</span>
+              <span style="font-size: 0.65rem; cursor: pointer; color: var(--neon-danger); text-decoration: underline;" id="btn-reset-leaderboard">Reset Personal Local Records</span>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -2774,33 +2849,11 @@
           }
         });
 
-        // Bind tab buttons
-        const tabGlobal = document.getElementById('tab-leaderboard-global');
-        const tabPersonal = document.getElementById('tab-leaderboard-personal');
-
-        tabGlobal.addEventListener('click', () => {
-          this.selectedLeaderboardTab = 'global';
-          tabGlobal.className = 'mono text-cyan';
-          tabGlobal.style.borderBottom = '2px solid var(--neon-cyan)';
-          tabPersonal.className = 'mono text-neutral';
-          tabPersonal.style.borderBottom = 'none';
-          this.renderLeaderboard();
-        });
-
-        tabPersonal.addEventListener('click', () => {
-          this.selectedLeaderboardTab = 'personal';
-          tabPersonal.className = 'mono text-cyan';
-          tabPersonal.style.borderBottom = '2px solid var(--neon-cyan)';
-          tabGlobal.className = 'mono text-neutral';
-          tabGlobal.style.borderBottom = 'none';
-          this.renderLeaderboard();
-        });
-
         // Reset Leaderboard action
         document.getElementById('btn-reset-leaderboard').addEventListener('click', () => {
-          if (confirm('Are you sure you want to reset the leaderboard and stats? This cannot be undone.')) {
+          if (confirm('Are you sure you want to reset your personal leaderboard records? This cannot be undone.')) {
             if (sql && this.isLoggedIn) {
-              alert("Cannot reset global public leaderboard directly from front-end.");
+              alert("Cannot reset global database leaderboard records directly from front-end.");
             } else {
               localStorage.removeItem('market_sim_leaderboard');
               this.renderLeaderboard();
@@ -2808,10 +2861,27 @@
           }
         });
 
-        if (sql) {
-          tabGlobal.innerText = "GLOBAL RANKINGS";
-        } else {
-          tabGlobal.innerText = "GLOBAL RANKINGS";
+        // Bind selection navigation tabs (Lobby vs Leaderboards)
+        const tabLobby = document.getElementById('tab-nav-lobby');
+        const tabLeaderboard = document.getElementById('tab-nav-leaderboard');
+        const screenLobby = document.getElementById('sub-screen-lobby');
+        const screenLeaderboards = document.getElementById('sub-screen-leaderboards');
+
+        if (tabLobby && tabLeaderboard && screenLobby && screenLeaderboards) {
+          tabLobby.addEventListener('click', () => {
+            tabLobby.classList.add('active');
+            tabLeaderboard.classList.remove('active');
+            screenLobby.style.display = 'block';
+            screenLeaderboards.style.display = 'none';
+          });
+
+          tabLeaderboard.addEventListener('click', () => {
+            tabLeaderboard.classList.add('active');
+            tabLobby.classList.remove('active');
+            screenLobby.style.display = 'none';
+            screenLeaderboards.style.display = 'block';
+            this.renderLeaderboard();
+          });
         }
 
         this.renderLeaderboard();
@@ -2960,39 +3030,49 @@
       },
 
       async renderLeaderboard() {
-        const fameBody = document.querySelector('#fame-table tbody');
-        const shameBody = document.querySelector('#shame-table tbody');
+        const fameGlobalBody = document.querySelector('#fame-table-global tbody');
+        const shameGlobalBody = document.querySelector('#shame-table-global tbody');
+        const famePersonalBody = document.querySelector('#fame-table-personal tbody');
+        const shamePersonalBody = document.querySelector('#shame-table-personal tbody');
 
-        fameBody.innerHTML = '';
-        shameBody.innerHTML = '';
+        if (fameGlobalBody) fameGlobalBody.innerHTML = '';
+        if (shameGlobalBody) shameGlobalBody.innerHTML = '';
+        if (famePersonalBody) famePersonalBody.innerHTML = '';
+        if (shamePersonalBody) shamePersonalBody.innerHTML = '';
 
-        const isGlobal = this.selectedLeaderboardTab === 'global';
+        let globalFame = [];
+        let globalShame = [];
+        let personalFame = [];
+        let personalShame = [];
+
+        let dbSuccess = false;
 
         if (sql) {
           try {
-            let fameList, shameList;
-            if (isGlobal) {
-              fameList = await sql`
-                SELECT username, market, return_pct 
-                FROM market_sim_leaderboard 
-                ORDER BY return_pct DESC 
-                LIMIT 5
-              `;
-              shameList = await sql`
-                SELECT username, market, return_pct 
-                FROM market_sim_leaderboard 
-                ORDER BY return_pct ASC 
-                LIMIT 5
-              `;
-            } else {
-              fameList = await sql`
+            // Fetch Global Rankings
+            globalFame = await sql`
+              SELECT username, market, return_pct 
+              FROM market_sim_leaderboard 
+              ORDER BY return_pct DESC 
+              LIMIT 5
+            `;
+            globalShame = await sql`
+              SELECT username, market, return_pct 
+              FROM market_sim_leaderboard 
+              ORDER BY return_pct ASC 
+              LIMIT 5
+            `;
+
+            // Fetch Personal Records if logged in
+            if (this.isLoggedIn) {
+              personalFame = await sql`
                 SELECT username, market, return_pct 
                 FROM market_sim_leaderboard 
                 WHERE username = ${this.username}
                 ORDER BY return_pct DESC 
                 LIMIT 5
               `;
-              shameList = await sql`
+              personalShame = await sql`
                 SELECT username, market, return_pct 
                 FROM market_sim_leaderboard 
                 WHERE username = ${this.username}
@@ -3000,33 +3080,47 @@
                 LIMIT 5
               `;
             }
-
-            this.renderLeaderboardRows(fameBody, fameList);
-            this.renderLeaderboardRows(shameBody, shameList);
-            return;
+            dbSuccess = true;
           } catch (e) {
             console.error("Neon DB query failed, falling back to LocalStorage:", e);
           }
         }
 
-        // Local Storage Fallback
-        const history = JSON.parse(localStorage.getItem('market_sim_leaderboard') || '[]');
-        
-        let filteredHistory = [...history];
-        if (!isGlobal) {
-          filteredHistory = history.filter(x => x.username === this.username);
+        // Local Storage Fallback & Guest Mode
+        if (!dbSuccess || !this.isLoggedIn) {
+          const localHistory = JSON.parse(localStorage.getItem('market_sim_leaderboard') || '[]');
+          
+          // Personal Records from LocalStorage matching current username
+          const personalHistory = localHistory.filter(x => x.username === this.username);
+          
+          personalFame = [...personalHistory]
+            .sort((a, b) => b.returnPct - a.returnPct)
+            .slice(0, 5)
+            .map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct }));
+
+          personalShame = [...personalHistory]
+            .sort((a, b) => a.returnPct - b.returnPct)
+            .slice(0, 5)
+            .map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct }));
+
+          // If db query completely failed, populate Global Rankings from LocalStorage too
+          if (!dbSuccess) {
+            globalFame = [...localHistory]
+              .sort((a, b) => b.returnPct - a.returnPct)
+              .slice(0, 5)
+              .map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct }));
+
+            globalShame = [...localHistory]
+              .sort((a, b) => a.returnPct - b.returnPct)
+              .slice(0, 5)
+              .map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct }));
+          }
         }
 
-        const fameList = [...filteredHistory]
-          .sort((a, b) => b.returnPct - a.returnPct)
-          .slice(0, 5);
-
-        const shameList = [...filteredHistory]
-          .sort((a, b) => a.returnPct - b.returnPct)
-          .slice(0, 5);
-
-        this.renderLeaderboardRows(fameBody, fameList.map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct })));
-        this.renderLeaderboardRows(shameBody, shameList.map(x => ({ username: x.username, market: x.market, return_pct: x.returnPct })));
+        if (fameGlobalBody) this.renderLeaderboardRows(fameGlobalBody, globalFame);
+        if (shameGlobalBody) this.renderLeaderboardRows(shameGlobalBody, globalShame);
+        if (famePersonalBody) this.renderLeaderboardRows(famePersonalBody, personalFame);
+        if (shamePersonalBody) this.renderLeaderboardRows(shamePersonalBody, personalShame);
       },
 
       renderLeaderboardRows(tbody, list) {
