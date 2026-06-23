@@ -1574,7 +1574,7 @@
     // --- NEON DATABASE SETUP ---
     // Expose connection string here to enable live global rankings!
     // Example: "postgresql://username:password@ep-cool-breeze-123456.us-east-2.aws.neon.tech/neondb?sslmode=require"
-    const NEON_DB_URL = ""; 
+    const NEON_DB_URL = "postgresql://neondb_owner:npg_RwDrISQqv2f3@ep-still-hat-abk8doby-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"; 
 
     let sql = null;
     if (NEON_DB_URL) {
@@ -2809,9 +2809,9 @@
         });
 
         if (sql) {
-          tabGlobal.innerText = "GLOBAL RANKINGS (LIVE)";
+          tabGlobal.innerText = "GLOBAL RANKINGS";
         } else {
-          tabGlobal.innerText = "GLOBAL RANKINGS (OFFLINE)";
+          tabGlobal.innerText = "GLOBAL RANKINGS";
         }
 
         this.renderLeaderboard();
